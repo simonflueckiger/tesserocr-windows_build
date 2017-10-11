@@ -2,4 +2,5 @@ remotes:
     origin:
         url: https://cppan.org/
 
+storage_dir: C:\Users\appveyor\.cppan\storage
 var_check_jobs: 1
