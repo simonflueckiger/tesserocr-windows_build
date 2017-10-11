@@ -2,5 +2,5 @@ remotes:
     origin:
         url: https://cppan.org/
 
-storage_dir: C:\Users\simon\.cppan\storage
+storage_dir: %userprofile%\.cppan\storage
 var_check_jobs: 1
