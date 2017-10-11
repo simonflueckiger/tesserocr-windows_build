@@ -1,0 +1,4 @@
+[submodule "tesserocr"]
+	path = tesserocr
+	url = https://github.com/sirfz/tesserocr.git
+	branch = master
