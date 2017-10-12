@@ -11,7 +11,7 @@ from setuptools import setup, Extension
 from Cython.Distutils import build_ext
 
 _LOGGER = logging.getLogger()
-if os.environ.get('DEBUG'):
+if os.environ.get('DEBUG', False):
     _LOGGER.setLevel(logging.DEBUG)
 else:
     _LOGGER.setLevel(logging.INFO)
@@ -179,8 +179,14 @@ if sys.platform == 'win32':
     
         # create cppan.yml cppan configuration file
         if get_platform() == 'win-amd64':
-            generator = 'Visual Studio 15 2017 Win64'
+            if not os.environ.get('BUILD_TARGET_32', False):
+                _LOGGER.info('building for Win64')
+                generator = 'Visual Studio 15 2017 Win64'
+            else:
+                _LOGGER.info('building for Win32')
+                generator = 'Visual Studio 15 2017'
         elif get_platform() == 'win32':
+            _LOGGER.info('building for Win32')
             generator = 'Visual Studio 15 2017'
     
         cppan_config = """
@@ -211,7 +217,7 @@ projects:
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
 
         for stdout_line in iter(p.stdout.readline, ""):
-            _LOGGER.info(stdout_line.strip())
+            _LOGGER.debug(stdout_line.strip())
         p.stdout.close()
         return_code = p.wait()
 
@@ -226,7 +232,7 @@ projects:
         output = ""
         for stdout_line in iter(p.stdout.readline, ""):
             output += stdout_line
-            _LOGGER.info(stdout_line.strip())
+            _LOGGER.debug(stdout_line.strip())
         p.stdout.close()
         return_code = p.wait()
 
