@@ -98,10 +98,10 @@ def get_tesseract_version():
         if version_match:
             version = version_match.group(1)
         else:
-            _LOGGER.warn('Failed to extract tesseract version number from: {}'.format(version))
+            _LOGGER.warning('Failed to extract tesseract version number from: {}'.format(version))
             version = _TESSERACT_MIN_VERSION
     except OSError as e:
-        _LOGGER.warn('Failed to extract tesseract version from executable: {}'.format(e))
+        _LOGGER.warning('Failed to extract tesseract version from executable: {}'.format(e))
         version = _TESSERACT_MIN_VERSION
     _LOGGER.info("Supporting tesseract v{}".format(version))
     version = version_to_int(version)
@@ -120,9 +120,9 @@ class BuildTesseract(build_ext):
         except Exception as e:
             if isinstance(e, OSError):
                 if e.errno != errno.ENOENT:
-                    _LOGGER.warn('Failed to run pkg-config: {}'.format(e))
+                    _LOGGER.warning('Failed to run pkg-config: {}'.format(e.decode('utf-8')))
             else:
-                _LOGGER.warn('pkg-config failed to find tesseract/lep libraries: {}'.format(e))
+                _LOGGER.warning('pkg-config failed to find tesseract/lep libraries: {}'.format(e.decode('utf-8')))
             build_args = get_tesseract_version()
 
         _LOGGER.debug('build parameters: {}'.format(build_args))
