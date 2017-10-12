@@ -120,9 +120,9 @@ class BuildTesseract(build_ext):
         except Exception as e:
             if isinstance(e, OSError):
                 if e.errno != errno.ENOENT:
-                    _LOGGER.warning('Failed to run pkg-config: {}'.format(e.decode('utf-8')))
+                    _LOGGER.warning('Failed to run pkg-config: {}'.format(e))
             else:
-                _LOGGER.warning('pkg-config failed to find tesseract/lep libraries: {}'.format(e.decode('utf-8')))
+                _LOGGER.warning('pkg-config failed to find tesseract/lep libraries: {}'.format(e))
             build_args = get_tesseract_version()
 
         _LOGGER.debug('build parameters: {}'.format(build_args))
@@ -242,7 +242,7 @@ projects:
         return_code = p.wait()
 
         # simonflueckiger: added german success message check
-        if output.find(b'Build succeeded.') < 0 and output.find(b'Buildvorgang wurde erfolgreich') < 0:
+        if output.find('Build succeeded.') < 0 and output.find('Buildvorgang wurde erfolgreich') < 0:
             raise RuntimeError(output.decode())
     
         # figure out our configuration
