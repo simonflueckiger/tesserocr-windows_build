@@ -191,6 +191,8 @@ if sys.platform == 'win32':
             _LOGGER.info('building for Win32')
         else:
             _LOGGER.error('platform not supported')
+
+        _LOGGER.info('using {}'.format(generator))
     
         cppan_config = """
 local_settings:
