@@ -9,9 +9,10 @@ from os.path import dirname, abspath
 from os.path import split as psplit, join as pjoin
 from setuptools import setup, Extension
 from Cython.Distutils import build_ext
+from distutils.util import strtobool
 
 _LOGGER = logging.getLogger()
-if os.environ.get('DEBUG', False):
+if strtobool(os.environ.get('DEBUG', False)):
     _LOGGER.setLevel(logging.DEBUG)
 else:
     _LOGGER.setLevel(logging.INFO)
@@ -179,7 +180,7 @@ if sys.platform == 'win32':
     
         # create cppan.yml cppan configuration file
         if get_platform() == 'win-amd64':
-            if not os.environ.get('BUILD_TARGET_32', False):
+            if not strtobool(os.environ.get('BUILD_TARGET_32', False)):
                 _LOGGER.info('building for Win64')
                 generator = 'Visual Studio 15 2017 Win64'
             else:
