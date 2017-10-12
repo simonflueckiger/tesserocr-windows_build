@@ -179,16 +179,18 @@ if sys.platform == 'win32':
             fp.write('int main(int argc, char *argv[]) { return 0; }\n')
     
         # create cppan.yml cppan configuration file
+
+        generator = strtobool(os.environ.get('GENERATOR_BASE', 'Visual Studio 15 2017'))
         if get_platform() == 'win-amd64':
-            if not strtobool(os.environ.get('BUILD_TARGET_32', False)):
+            if not strtobool(os.environ.get('BUILD_TARGET_32', '0')):
                 _LOGGER.info('building for Win64')
-                generator = 'Visual Studio 15 2017 Win64'
+                generator += ' Win64'
             else:
                 _LOGGER.info('building for Win32')
-                generator = 'Visual Studio 15 2017'
         elif get_platform() == 'win32':
             _LOGGER.info('building for Win32')
-            generator = 'Visual Studio 15 2017'
+        else:
+            _LOGGER.error('platform not supported')
     
         cppan_config = """
 local_settings:
