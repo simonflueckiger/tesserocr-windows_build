@@ -12,7 +12,7 @@ from Cython.Distutils import build_ext
 from distutils.util import strtobool
 
 _LOGGER = logging.getLogger()
-if strtobool(os.environ.get('DEBUG', False)):
+if strtobool(os.environ.get('DEBUG', '0')):
     _LOGGER.setLevel(logging.DEBUG)
 else:
     _LOGGER.setLevel(logging.INFO)
