@@ -24,6 +24,33 @@ _TESSERACT_MIN_VERSION = '3.04.00'
 here = abspath(dirname(__file__))
 
 
+def patch_timezone_conflict():
+    def find(name, path):
+        for root, dirs, files in os.walk(path):
+            if name in files:
+                return os.path.join(root, name)
+
+    home_dir = os.environ.get('USERPROFILE')
+    path = find("gettimeofday.h", home_dir + r"\.cppan\storage\src")
+    path_dir = os.path.dirname(path)
+
+    with open(path_dir + '\gettimeofday.h', 'r+') as fp:
+        contents = fp.read()
+        contents = contents.replace('timezone', 'not_used_timezone')
+        fp.truncate(0)
+        fp.seek(0)
+        fp.write(contents)
+
+    with open(path_dir + '\gettimeofday.cpp', 'r+') as fp:
+        contents = fp.read()
+        contents = contents.replace('timezone', 'not_used_timezone')
+        fp.truncate(0)
+        fp.seek(0)
+        fp.write(contents)
+
+    shutil.rmtree(home_dir + "\.cppan\storage\lnk")
+
+
 def read(*parts):
     return codecs.open(pjoin(here, *parts), 'r').read()
 
@@ -213,22 +240,27 @@ projects:
     
         with open(os.path.join(build_dir, 'cppan.yml'), 'w') as fp:
             fp.write(cppan_config)
-    
-        # build tesseract.exe
-        cmd = 'cppan --build-packages pvt.cppan.demo.google.tesseract.tesseract-%s' % tesseract_version
 
-        # simonflueckiger: added a bit of verbosity to popen call
-        p = subprocess.Popen(shlex.split(cmd), cwd=build_dir,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        def build_tesseract_exe():
+            # build tesseract.exe
+            cmd = 'cppan --build-packages pvt.cppan.demo.google.tesseract.tesseract-%s' % tesseract_version
 
-        for stdout_line in iter(p.stdout.readline, ""):
-            _LOGGER.debug(stdout_line.strip())
-        p.stdout.close()
-        return_code = p.wait()
+            # simonflueckiger: added a bit of verbosity to popen call
+            p = subprocess.Popen(shlex.split(cmd), cwd=build_dir,
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
 
-        if return_code != 0:
-            raise RuntimeError("something went wrong during cppan --build-packages")
-    
+            for stdout_line in iter(p.stdout.readline, ""):
+                _LOGGER.debug(stdout_line.strip())
+            p.stdout.close()
+            return_code = p.wait()
+
+            if return_code != 0:
+                raise RuntimeError("something went wrong during cppan --build-packages")
+
+        build_tesseract_exe()
+        patch_timezone_conflict()
+        build_tesseract_exe()
+
         # build dummy.exe
         cmd = 'cppan --build .'
         p = subprocess.Popen(shlex.split(cmd), cwd=build_dir,
