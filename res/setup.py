@@ -25,7 +25,7 @@ here = abspath(dirname(__file__))
 
 
 def patch_timezone_conflict():
-    _LOGGER.info("Patching timezone naming conflict...\n------------------------------------")
+    _LOGGER.info("\nPatching timezone naming conflict...\n------------------------------------")
 
     def find(name, path):
         for root, dirs, files in os.walk(path):
@@ -67,10 +67,12 @@ def patch_timezone_conflict():
     shutil.rmtree(lnk_path)
 
     # delete obj file
-    obj_paths = find("gettimeofday.obj", home_dir + r"\.cppan\storage\obj")
+    obj_paths = find_all("gettimeofday.obj", home_dir + r"\.cppan\storage\obj")
     for obj_path in obj_paths:
         os.remove(obj_path)
         _LOGGER.info("removed {}".format(obj_path))
+
+    _LOGGER.info("------------------------------------\n")
 
 def read(*parts):
     return codecs.open(pjoin(here, *parts), 'r').read()
@@ -280,6 +282,8 @@ projects:
 
         build_tesseract_exe()
         patch_timezone_conflict()
+
+        _LOGGER.info("rebuilding packages after patch")
         build_tesseract_exe()
 
         # build dummy.exe
