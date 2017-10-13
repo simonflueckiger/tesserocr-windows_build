@@ -30,6 +30,13 @@ def patch_timezone_conflict():
             if name in files:
                 return os.path.join(root, name)
 
+    def find_all(name, path):
+        result = []
+        for root, dirs, files in os.walk(path):
+            if name in files:
+                result.append(os.path.join(root, name))
+        return result
+
     home_dir = os.environ.get('USERPROFILE')
     header_path = find("gettimeofday.h", home_dir + r"\.cppan\storage\src")
     source_path = os.path.dirname(header_path)
@@ -52,8 +59,9 @@ def patch_timezone_conflict():
     shutil.rmtree(home_dir + "\.cppan\storage\lnk")
 
     # delete obj file
-    obj_path = find("gettimeofday.obj", home_dir + r"\.cppan\storage\src")
-    os.remove(obj_path)
+    obj_paths = find("gettimeofday.obj", home_dir + r"\.cppan\storage\obj")
+    for obj_path in obj_paths:
+        os.remove(obj_path)
 
 def read(*parts):
     return codecs.open(pjoin(here, *parts), 'r').read()
