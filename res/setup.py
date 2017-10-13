@@ -293,14 +293,12 @@ projects:
         build_tesseract_exe()
         _LOGGER.info("building packages done")
 
-        if not strtobool(os.environ.get('PATCHED', '0')):
+        if strtobool(os.environ.get('TIMEZONE_PATCH', '0')):
             patch_timezone_conflict()
 
             _LOGGER.info("rebuilding packages after patch")
             build_tesseract_exe()
             _LOGGER.info("rebuilding packages done")
-
-            os.environ["PATCHED"] = "1"
 
         # build dummy.exe
         cmd = 'cppan --build .'
