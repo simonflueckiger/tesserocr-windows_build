@@ -31,25 +31,29 @@ def patch_timezone_conflict():
                 return os.path.join(root, name)
 
     home_dir = os.environ.get('USERPROFILE')
-    path = find("gettimeofday.h", home_dir + r"\.cppan\storage\src")
-    path_dir = os.path.dirname(path)
+    header_path = find("gettimeofday.h", home_dir + r"\.cppan\storage\src")
+    source_path = os.path.dirname(header_path)
 
-    with open(path_dir + '\gettimeofday.h', 'r+') as fp:
+    with open(source_path + '\gettimeofday.h', 'r+') as fp:
         contents = fp.read()
         contents = contents.replace('timezone', 'not_used_timezone')
         fp.truncate(0)
         fp.seek(0)
         fp.write(contents)
 
-    with open(path_dir + '\gettimeofday.cpp', 'r+') as fp:
+    with open(source_path + '\gettimeofday.cpp', 'r+') as fp:
         contents = fp.read()
         contents = contents.replace('timezone', 'not_used_timezone')
         fp.truncate(0)
         fp.seek(0)
         fp.write(contents)
 
+    # delete lnk folder
     shutil.rmtree(home_dir + "\.cppan\storage\lnk")
 
+    # delete obj file
+    obj_path = find("gettimeofday.obj", home_dir + r"\.cppan\storage\src")
+    os.remove(obj_path)
 
 def read(*parts):
     return codecs.open(pjoin(here, *parts), 'r').read()
