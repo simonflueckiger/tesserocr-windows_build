@@ -25,6 +25,8 @@ here = abspath(dirname(__file__))
 
 
 def patch_timezone_conflict():
+    _LOGGER.info("Patching timezone naming conflict...\n------------------------------------")
+
     def find(name, path):
         for root, dirs, files in os.walk(path):
             if name in files:
@@ -40,15 +42,19 @@ def patch_timezone_conflict():
     home_dir = os.environ.get('USERPROFILE')
     header_path = find("gettimeofday.h", home_dir + r"\.cppan\storage\src")
     source_path = os.path.dirname(header_path)
+    h_path = source_path + '\gettimeofday.h'
+    cpp_path = source_path + '\gettimeofday.cpp'
 
-    with open(source_path + '\gettimeofday.h', 'r+') as fp:
+    with open(h_path, 'r+') as fp:
+        _LOGGER.info("patching {}".format(h_path))
         contents = fp.read()
         contents = contents.replace('timezone', 'not_used_timezone')
         fp.truncate(0)
         fp.seek(0)
         fp.write(contents)
 
-    with open(source_path + '\gettimeofday.cpp', 'r+') as fp:
+    with open(cpp_path, 'r+') as fp:
+        _LOGGER.info("patching {}".format(cpp_path))
         contents = fp.read()
         contents = contents.replace('timezone', 'not_used_timezone')
         fp.truncate(0)
@@ -56,12 +62,15 @@ def patch_timezone_conflict():
         fp.write(contents)
 
     # delete lnk folder
-    shutil.rmtree(home_dir + "\.cppan\storage\lnk")
+    lnk_path = home_dir + "\.cppan\storage\lnk"
+    _LOGGER.info("deleting {}".format(lnk_path))
+    shutil.rmtree(lnk_path)
 
     # delete obj file
     obj_paths = find("gettimeofday.obj", home_dir + r"\.cppan\storage\obj")
     for obj_path in obj_paths:
         os.remove(obj_path)
+        _LOGGER.info("removed {}".format(obj_path))
 
 def read(*parts):
     return codecs.open(pjoin(here, *parts), 'r').read()
