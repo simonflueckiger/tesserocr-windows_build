@@ -72,6 +72,11 @@ def patch_timezone_conflict():
         os.remove(obj_path)
         _LOGGER.info("removed {}".format(obj_path))
 
+    # delete obj folder
+    obj_folder_path = home_dir + "\.cppan\storage\obj"
+    _LOGGER.info("deleting {}".format(obj_folder_path))
+    shutil.rmtree(obj_folder_path)
+
     _LOGGER.info("------------------------------------\n")
 
 def read(*parts):
@@ -280,11 +285,15 @@ projects:
             if return_code != 0:
                 raise RuntimeError("something went wrong during cppan --build-packages")
 
+        _LOGGER.info("building packages")
         build_tesseract_exe()
+        _LOGGER.info("building packages done")
+
         patch_timezone_conflict()
 
         _LOGGER.info("rebuilding packages after patch")
         build_tesseract_exe()
+        _LOGGER.info("rebuilding packages done")
 
         # build dummy.exe
         cmd = 'cppan --build .'
