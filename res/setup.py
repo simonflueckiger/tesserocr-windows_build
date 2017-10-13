@@ -66,11 +66,11 @@ def patch_timezone_conflict():
     _LOGGER.info("deleting {}".format(lnk_path))
     shutil.rmtree(lnk_path)
 
-    # delete obj file
-    obj_paths = find_all("gettimeofday.obj", home_dir + r"\.cppan\storage\obj")
-    for obj_path in obj_paths:
-        os.remove(obj_path)
-        _LOGGER.info("removed {}".format(obj_path))
+    # # delete obj file
+    # obj_paths = find_all("gettimeofday.obj", home_dir + r"\.cppan\storage\obj")
+    # for obj_path in obj_paths:
+    #     os.remove(obj_path)
+    #     _LOGGER.info("removed {}".format(obj_path))
 
     # delete obj folder
     obj_folder_path = home_dir + "\.cppan\storage\obj"
@@ -214,7 +214,11 @@ if sys.platform == 'win32':
     import yaml
 
     tesseract_dll_files = []
-    def prepare_tesseract_env(leptonica_version='1.74.4', tesseract_version='3.5.1'):
+
+    leptonica_version = os.environ.get('LEPTONICA_VERSION', '1.74.4')
+    tesseract_version = os.environ.get('TESSERACT_VERSION', '3.5.1')
+
+    def prepare_tesseract_env(leptonica_version=leptonica_version, tesseract_version=tesseract_version):
         global tesseract_dll_files
         top_dir = os.path.dirname(os.path.abspath(__file__))
         build_dir = os.path.join(top_dir, 'build', 'tesseract_build')
@@ -289,11 +293,14 @@ projects:
         build_tesseract_exe()
         _LOGGER.info("building packages done")
 
-        patch_timezone_conflict()
+        if not strtobool(os.environ.get('PATCHED', '0')):
+            patch_timezone_conflict()
 
-        _LOGGER.info("rebuilding packages after patch")
-        build_tesseract_exe()
-        _LOGGER.info("rebuilding packages done")
+            _LOGGER.info("rebuilding packages after patch")
+            build_tesseract_exe()
+            _LOGGER.info("rebuilding packages done")
+
+            os.environ["PATCHED"] = "1"
 
         # build dummy.exe
         cmd = 'cppan --build .'
