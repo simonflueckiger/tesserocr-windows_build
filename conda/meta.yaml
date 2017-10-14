@@ -1,0 +1,15 @@
+package:
+    name: tesserocr
+    version: 2.2.2
+build:
+    number: '0'
+requirements:
+    build:
+        - python
+    run:
+        - python
+about:
+    home: https://github.com/sirfz/tesserocr
+    license: MIT
+    summary: A simple, Pillow-friendly, Python wrapper around tesseract-ocr API using
+        Cython
