@@ -1,6 +1,9 @@
 package:
     name: tesserocr
     version: 2.2.2
+requirements:
+  run:
+    - python
 about:
     home: https://github.com/sirfz/tesserocr
     license: MIT
