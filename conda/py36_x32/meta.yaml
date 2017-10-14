@@ -4,6 +4,8 @@ package:
 requirements:
   run:
     - python
+build:
+  number: 0
 about:
     home: https://github.com/sirfz/tesserocr
     license: MIT
