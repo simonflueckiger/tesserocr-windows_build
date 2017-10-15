@@ -260,10 +260,6 @@ local_settings:
   build_dir: build
   build:
     generator: %s
-    
-patch:
-  replace:
-    "timezone": "not_used_timezone"
 
 projects:
   dummy:
