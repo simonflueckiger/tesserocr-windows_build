@@ -180,6 +180,8 @@ class BuildTesseract(build_ext):
                 _LOGGER.warning('pkg-config failed to find tesseract/lep libraries: {}'.format(e))
             build_args = get_tesseract_version()
 
+        build_args['extra_compile_args'] = ['-std=c++11', '-DUSE_STD_NAMESPACE']
+
         _LOGGER.debug('build parameters: {}'.format(build_args))
         for k, v in build_args.items():
             setattr(self, k, v)
