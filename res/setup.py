@@ -261,11 +261,6 @@ local_settings:
   build:
     generator: %s
 
-local_settings:
-  build:
-    cmake_options:
-      - -DUSE_STD_NAMESPACE
-
 projects:
   dummy:
     files: dummy.cpp
