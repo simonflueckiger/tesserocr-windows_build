@@ -305,7 +305,7 @@ projects:
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
 
             for stdout_line in iter(p.stdout.readline, ""):
-                _LOGGER.debug(stdout_line.strip())
+                _LOGGER.info(stdout_line.strip())
             p.stdout.close()
             return_code = p.wait()
 
