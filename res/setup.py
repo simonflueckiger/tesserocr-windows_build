@@ -24,6 +24,13 @@ _TESSERACT_MIN_VERSION = '3.04.00'
 here = abspath(dirname(__file__))
 
 
+def go_up(dir, n):
+    if n == 0:
+        return dir
+
+    return os.path.dirname(go_up(dir, n-1))
+
+
 def patch_timezone_conflict():
     _LOGGER.info("\nPatching timezone naming conflict...\n------------------------------------")
 
@@ -62,12 +69,14 @@ def patch_timezone_conflict():
         fp.write(contents)
 
     unichar_path_from = "../res/patch/unichar.h"
-    unichar_path_to = "./build/tesseract_build/include/tesseract/unichar.h"
+    # unichar_path_to = "./build/tesseract_build/include/tesseract/unichar.h"
+    unichar_path_to = go_up(source_path, 2) + r"\ccutil\unichar.h"
     _LOGGER.info("patching {}".format(unichar_path_to))
     shutil.copy(unichar_path_from, unichar_path_to)
 
     unicharset_path_from = "../res/patch/unicharset.h"
-    unicharset_path_to = "./build/tesseract_build/include/tesseract/unicharset.h"
+    # unicharset_path_to = "./build/tesseract_build/include/tesseract/unicharset.h"
+    unicharset_path_to = go_up(source_path, 2) + r"\ccutil\unicharset.h"
     _LOGGER.info("patching {}".format(unicharset_path_to))
     shutil.copy(unicharset_path_from, unicharset_path_to)
 
