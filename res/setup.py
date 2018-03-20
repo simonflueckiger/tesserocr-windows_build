@@ -68,17 +68,16 @@ def patch_timezone_conflict():
         fp.seek(0)
         fp.write(contents)
 
-    unichar_path_from = "../res/patch/unichar.h"
-    # unichar_path_to = "./build/tesseract_build/include/tesseract/unichar.h"
-    unichar_path_to = go_up(source_path, 2) + r"\ccutil\unichar.h"
-    _LOGGER.info("patching {}".format(unichar_path_to))
-    shutil.copy(unichar_path_from, unichar_path_to)
+    for type in [".h", ".cpp"]:
+        unichar_path_from = "../res/patch/unichar" + type
+        unichar_path_to = go_up(source_path, 2) + r"\ccutil\unichar" + type
+        _LOGGER.info("patching {}".format(unichar_path_to))
+        shutil.copy(unichar_path_from, unichar_path_to)
 
-    unicharset_path_from = "../res/patch/unicharset.h"
-    # unicharset_path_to = "./build/tesseract_build/include/tesseract/unicharset.h"
-    unicharset_path_to = go_up(source_path, 2) + r"\ccutil\unicharset.h"
-    _LOGGER.info("patching {}".format(unicharset_path_to))
-    shutil.copy(unicharset_path_from, unicharset_path_to)
+        unicharset_path_from = "../res/patch/unicharset" + type
+        unicharset_path_to = go_up(source_path, 2) + r"\ccutil\unicharset" + type
+        _LOGGER.info("patching {}".format(unicharset_path_to))
+        shutil.copy(unicharset_path_from, unicharset_path_to)
 
     # delete lnk folder
     lnk_path = home_dir + "\.cppan\storage\lnk"
@@ -305,7 +304,7 @@ projects:
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
 
             for stdout_line in iter(p.stdout.readline, ""):
-                _LOGGER.info(stdout_line.strip())
+                _LOGGER.debug(stdout_line.strip())
             p.stdout.close()
             return_code = p.wait()
 
