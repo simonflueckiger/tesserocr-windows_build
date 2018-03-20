@@ -180,6 +180,10 @@ class BuildTesseract(build_ext):
                 _LOGGER.warning('pkg-config failed to find tesseract/lep libraries: {}'.format(e))
             build_args = get_tesseract_version()
 
+        if build_args['cython_compile_time_env']['TESSERACT_VERSION'] >= 0x040000:
+            _LOGGER.debug('tesseract >= 4.00 requires c++11 compiler support')
+            build_args['extra_compile_args'] = ['-std=c++11', '-DUSE_STD_NAMESPACE']
+
         _LOGGER.debug('build parameters: {}'.format(build_args))
         for k, v in build_args.items():
             setattr(self, k, v)
