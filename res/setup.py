@@ -61,6 +61,16 @@ def patch_timezone_conflict():
         fp.seek(0)
         fp.write(contents)
 
+    unichar_path_from = "../res/patch/unichar.h"
+    unichar_path_to = "./build/tesseract_build/include/tesseract/unichar.h"
+    _LOGGER.info("patching {}".format(unichar_path_to))
+    shutil.copy(unichar_path_from, unichar_path_to)
+
+    unicharset_path_from = "../res/patch/unicharset.h"
+    unicharset_path_to = "./build/tesseract_build/include/tesseract/unicharset.h"
+    _LOGGER.info("patching {}".format(unicharset_path_to))
+    shutil.copy(unicharset_path_from, unicharset_path_to)
+
     # delete lnk folder
     lnk_path = home_dir + "\.cppan\storage\lnk"
     _LOGGER.info("deleting {}".format(lnk_path))
