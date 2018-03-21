@@ -68,16 +68,22 @@ def patch_timezone_conflict():
         fp.seek(0)
         fp.write(contents)
 
-    for type in [".h", ".cpp"]:
-        unichar_path_from = "../res/patch/unichar" + type
-        unichar_path_to = go_up(source_path, 2) + r"\ccutil\unichar" + type
-        _LOGGER.info("patching {}".format(unichar_path_to))
-        shutil.copy(unichar_path_from, unichar_path_to)
+    # patch unichar.h, unichar.cpp, unicharset.h, unicharset.cpp
+    # this should be redundant for builds past commit ad6f3b412a9a18f3819ae9feaf872464c7bf0e7b when string was
+    # changed to std::string
+    build_args = package_config()
+    if build_args['cython_compile_time_env']['TESSERACT_VERSION'] >= 0x040000:
 
-        unicharset_path_from = "../res/patch/unicharset" + type
-        unicharset_path_to = go_up(source_path, 2) + r"\ccutil\unicharset" + type
-        _LOGGER.info("patching {}".format(unicharset_path_to))
-        shutil.copy(unicharset_path_from, unicharset_path_to)
+        for type in [".h", ".cpp"]:
+            unichar_path_from = "../res/patch/unichar" + type
+            unichar_path_to = go_up(source_path, 2) + r"\ccutil\unichar" + type
+            _LOGGER.info("patching {}".format(unichar_path_to))
+            shutil.copy(unichar_path_from, unichar_path_to)
+
+            unicharset_path_from = "../res/patch/unicharset" + type
+            unicharset_path_to = go_up(source_path, 2) + r"\ccutil\unicharset" + type
+            _LOGGER.info("patching {}".format(unicharset_path_to))
+            shutil.copy(unicharset_path_from, unicharset_path_to)
 
     # delete lnk folder
     lnk_path = home_dir + "\.cppan\storage\lnk"
