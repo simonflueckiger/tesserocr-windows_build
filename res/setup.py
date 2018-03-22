@@ -71,7 +71,7 @@ def patch_timezone_conflict():
     # patch unichar.h, unichar.cpp, unicharset.h, unicharset.cpp
     # this should be redundant for builds past commit ad6f3b412a9a18f3819ae9feaf872464c7bf0e7b when string was
     # changed to std::string
-    build_args = package_config()
+    build_args = get_tesseract_version()
     if build_args['cython_compile_time_env']['TESSERACT_VERSION'] >= 0x040000:
 
         for type in [".h", ".cpp"]:
@@ -205,7 +205,7 @@ class BuildTesseract(build_ext):
             build_args = get_tesseract_version()
 
         if build_args['cython_compile_time_env']['TESSERACT_VERSION'] >= 0x040000:
-            _LOGGER.debug('tesseract >= 4.00 requires c++11 compiler support')
+            _LOGGER.info('tesseract >= 4.00 requires c++11 compiler support')
             build_args['extra_compile_args'] = ['-std=c++11', '-DUSE_STD_NAMESPACE']
 
         _LOGGER.debug('build parameters: {}'.format(build_args))
