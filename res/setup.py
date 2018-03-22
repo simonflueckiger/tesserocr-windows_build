@@ -31,7 +31,7 @@ def go_up(dir, n):
     return os.path.dirname(go_up(dir, n-1))
 
 
-def patch_timezone_conflict():
+def patch_timezone_conflict(tesseract_version):
     _LOGGER.info("\nPatching timezone naming conflict...\n------------------------------------")
 
     def find(name, path):
@@ -71,8 +71,7 @@ def patch_timezone_conflict():
     # patch unichar.h, unichar.cpp, unicharset.h, unicharset.cpp
     # this should be redundant for builds past commit ad6f3b412a9a18f3819ae9feaf872464c7bf0e7b when string was
     # changed to std::string
-    build_args = get_tesseract_version()
-    if build_args['cython_compile_time_env']['TESSERACT_VERSION'] >= 0x040000:
+    if tesseract_version >= 0x040000:
 
         for type in [".h", ".cpp"]:
             unichar_path_from = "../res/patch/unichar" + type
@@ -208,7 +207,7 @@ class BuildTesseract(build_ext):
             _LOGGER.info('tesseract >= 4.00 requires c++11 compiler support')
             build_args['extra_compile_args'] = ['-std=c++11', '-DUSE_STD_NAMESPACE']
 
-        _LOGGER.debug('build parameters: {}'.format(build_args))
+        _LOGGER.info('build parameters: {}'.format(build_args))
         for k, v in build_args.items():
             setattr(self, k, v)
             
@@ -303,6 +302,12 @@ projects:
 
         def build_tesseract_exe():
             # build tesseract.exe
+
+            if int(tesseract_version[0]) >= 4:
+                tesseract_cppan_version = "master"
+            else:
+                tesseract_cppan_version = tesseract_version
+
             cmd = 'cppan --build-packages pvt.cppan.demo.google.tesseract.tesseract-%s' % tesseract_version
 
             # simonflueckiger: added a bit of verbosity to popen call
@@ -322,7 +327,7 @@ projects:
         _LOGGER.info("building packages done")
 
         if strtobool(os.environ.get('TIMEZONE_PATCH', '0')):
-            patch_timezone_conflict()
+            patch_timezone_conflict(tesseract_version)
 
             _LOGGER.info("rebuilding packages after patch")
             build_tesseract_exe()
@@ -366,6 +371,10 @@ projects:
             raise RuntimeError('unknown tesseract version number???')
         tesseract_version = m.group(1)
         tesseract_version_number = int(''.join(tesseract_version.split('.')), 16)
+
+        _LOGGER.info("extracted tesseract version from executable")
+        _LOGGER.info("tesseract version: {}".format(tesseract_version))
+        _LOGGER.info("tesseract version number: {}".format(tesseract_version_number))
     
         # prepare header files
         d = os.path.split(build_dir)[-1]
@@ -466,6 +475,9 @@ projects:
             'libraries'    : [os.path.splitext(lib)[0] for lib in lib_files],
             'cython_compile_time_env' : {'TESSERACT_VERSION': tesseract_version_number }   
         }
+
+        _LOGGER.info("config: {}".format(config))
+
         return config
     
     package_config = prepare_tesseract_env
