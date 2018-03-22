@@ -71,7 +71,7 @@ def patch_timezone_conflict(tesseract_version):
     # patch unichar.h, unichar.cpp, unicharset.h, unicharset.cpp
     # this should be redundant for builds past commit ad6f3b412a9a18f3819ae9feaf872464c7bf0e7b when string was
     # changed to std::string
-    if tesseract_version >= 0x040000:
+    if tesseract_version >= 4:
 
         for type in [".h", ".cpp"]:
             unichar_path_from = "../res/patch/unichar" + type
@@ -303,7 +303,9 @@ projects:
         def build_tesseract_exe():
             # build tesseract.exe
 
-            if int(tesseract_version[0]) >= 4:
+            tesseract_major_version = int(tesseract_version[0])
+
+            if tesseract_major_version >= 4:
                 tesseract_cppan_version = "master"
             else:
                 tesseract_cppan_version = tesseract_version
@@ -330,7 +332,7 @@ projects:
         _LOGGER.info("building packages done")
 
         if strtobool(os.environ.get('TIMEZONE_PATCH', '0')):
-            patch_timezone_conflict(tesseract_version)
+            patch_timezone_conflict(tesseract_major_version)
 
             _LOGGER.info("rebuilding packages after patch")
             build_tesseract_exe()
