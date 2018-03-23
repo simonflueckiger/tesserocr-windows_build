@@ -331,7 +331,9 @@ projects:
         build_tesseract_exe()
         _LOGGER.info("building packages done")
 
+        _LOGGER.info("test1")
         if strtobool(os.environ.get('TIMEZONE_PATCH', '0')):
+            _LOGGER.info("test2")
             patch_timezone_conflict(tesseract_major_version)
 
             _LOGGER.info("rebuilding packages after patch")
