@@ -300,10 +300,10 @@ projects:
         with open(os.path.join(build_dir, 'cppan.yml'), 'w') as fp:
             fp.write(cppan_config)
 
+        tesseract_major_version = int(tesseract_version[0])
+
         def build_tesseract_exe():
             # build tesseract.exe
-
-            tesseract_major_version = int(tesseract_version[0])
 
             if tesseract_major_version >= 4:
                 tesseract_cppan_version = "master"
