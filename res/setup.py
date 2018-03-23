@@ -369,9 +369,13 @@ projects:
         p = subprocess.Popen(args, cwd=os.path.join(build_dir, 'bin'),
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, err = p.communicate()
+
+        _LOGGER.info("trying to extract tesseract version")
+        _LOGGER.info("version string: {}".format(output.encode().decode()))
+
         if p.returncode != 0:
             raise RuntimeError('tesseract execution failed????')
-        m = re.search("tesseract ([0-9]+\.[0-9]+\.[0-9]+)", output.decode())
+        m = re.search("tesseract ([0-9]+\.[0-9]+\.[0-9]+)", output.encode().decode())
         if m is None:
             raise RuntimeError('unknown tesseract version number???')
         tesseract_version = m.group(1)
