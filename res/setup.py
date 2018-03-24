@@ -283,6 +283,13 @@ if sys.platform == 'win32':
             _LOGGER.error('platform not supported')
 
         _LOGGER.info('using {}'.format(generator))
+
+        tesseract_major_version = int(tesseract_version[0])
+
+        if tesseract_major_version >= 4:
+            tesseract_cppan_version = "master"
+        else:
+            tesseract_cppan_version = tesseract_version
     
         cppan_config = """
 local_settings:
@@ -299,20 +306,13 @@ projects:
       pvt.cppan.demo.danbloomberg.leptonica: %s
       pvt.cppan.demo.google.tesseract.libtesseract: %s
       pvt.cppan.demo.google.tesseract.tesseract: %s
-""" % (generator, leptonica_version, tesseract_version, tesseract_version)
+""" % (generator, leptonica_version, tesseract_cppan_version, tesseract_cppan_version)
     
         with open(os.path.join(build_dir, 'cppan.yml'), 'w') as fp:
             fp.write(cppan_config)
 
-        tesseract_major_version = int(tesseract_version[0])
-
         def build_tesseract_exe():
             # build tesseract.exe
-
-            if tesseract_major_version >= 4:
-                tesseract_cppan_version = "master"
-            else:
-                tesseract_cppan_version = tesseract_version
 
             _LOGGER.info("tesseract version: {}".format(tesseract_version))
             _LOGGER.info("tesseract cppan version: {}".format(tesseract_cppan_version))
@@ -348,16 +348,15 @@ projects:
         p = subprocess.Popen(shlex.split(cmd), cwd=build_dir,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
 
-        # output = ""
-        # _LOGGER.info("test_02")
-        # for stdout_line in iter(p.stdout.readline, ""):
-        #     output += stdout_line
-        #     _LOGGER.info("test")
-        #     _LOGGER.debug(stdout_line.strip())
-        # p.stdout.close()
-        # return_code = p.wait()
+        output = ""
+        _LOGGER.info("test_02")
+        for stdout_line in iter(p.stdout.readline, ""):
+            output += stdout_line
+            _LOGGER.debug(stdout_line.strip())
+        p.stdout.close()
+        return_code = p.wait()
 
-        output, err = p.communicate()
+        # output, err = p.communicate()
 
         _LOGGER.info("test_03")
         _LOGGER.info(output.encode().decode())
