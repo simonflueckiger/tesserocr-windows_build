@@ -361,10 +361,12 @@ projects:
 
         _LOGGER.info("test_03")
         _LOGGER.info(output.encode().decode())
+        _LOGGER.info("test_04")
 
         # simonflueckiger: added german success message check
         if output.find('Build succeeded.') < 0 and output.find('Buildvorgang wurde erfolgreich') < 0:
             raise RuntimeError(output.encode().decode())
+        _LOGGER.info("test_05")
     
         # figure out our configuration
         files = os.listdir(os.path.join(build_dir, 'bin'))
