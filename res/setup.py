@@ -344,12 +344,15 @@ projects:
 
         # build dummy.exe
         cmd = 'cppan --build .'
+        _LOGGER.info("test_01")
         p = subprocess.Popen(shlex.split(cmd), cwd=build_dir,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
 
         output = ""
+        _LOGGER.info("test_02")
         for stdout_line in iter(p.stdout.readline, ""):
             output += stdout_line
+            _LOGGER.info("test")
             _LOGGER.debug(stdout_line.strip())
         p.stdout.close()
         return_code = p.wait()
