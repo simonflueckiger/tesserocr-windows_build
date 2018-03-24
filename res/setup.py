@@ -133,14 +133,17 @@ def package_config():
     p = subprocess.Popen(['pkg-config', '--exists', '--atleast-version={}'.format(_TESSERACT_MIN_VERSION),
                           '--print-errors', 'tesseract'],
                          stderr=subprocess.PIPE)
-    _, error = p.communicate()
+    output, error = p.communicate()
+    _LOGGER.info(output)
     if p.returncode != 0:
         raise Exception(error)
     p = subprocess.Popen(['pkg-config', '--libs', '--cflags', 'tesseract'], stdout=subprocess.PIPE)
     output, _ = p.communicate()
+    _LOGGER.info(output)
     flags = _read_string(output).strip().split()
     p = subprocess.Popen(['pkg-config', '--libs', '--cflags', 'lept'], stdout=subprocess.PIPE)
     output, _ = p.communicate()
+    _LOGGER.info(output)
     flags2 = _read_string(output).strip().split()
     options = {'-L': 'library_dirs',
                '-I': 'include_dirs',
@@ -159,6 +162,7 @@ def package_config():
     config = {k: list(v) for k, v in config.items()}
     p = subprocess.Popen(['pkg-config', '--modversion', 'tesseract'], stdout=subprocess.PIPE)
     version, _ = p.communicate()
+    _LOGGER.info(version)
     version = _read_string(version).strip()
     _LOGGER.info("Supporting tesseract v{}".format(version))
     config['cython_compile_time_env'] = {'TESSERACT_VERSION': version_to_int(version)}
