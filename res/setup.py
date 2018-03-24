@@ -359,12 +359,12 @@ projects:
         # output, err = p.communicate()
 
         _LOGGER.info("test_03")
-        _LOGGER.info(output.encode().decode())
+        # _LOGGER.info(output.decode())
         _LOGGER.info("test_04")
 
         # simonflueckiger: added german success message check
         if output.find('Build succeeded.') < 0 and output.find('Buildvorgang wurde erfolgreich') < 0:
-            raise RuntimeError(output.encode().decode())
+            raise RuntimeError(output.decode())
         _LOGGER.info("test_05")
     
         # figure out our configuration
@@ -387,11 +387,11 @@ projects:
         output, err = p.communicate()
 
         _LOGGER.info("trying to extract tesseract version")
-        _LOGGER.info("version string: {}".format(output.encode().decode()))
+        _LOGGER.info("version string: {}".format(output.decode()))
 
         if p.returncode != 0:
             raise RuntimeError('tesseract execution failed????')
-        m = re.search("tesseract ([0-9]+\.[0-9]+\.[0-9]+)", output.encode().decode())
+        m = re.search("tesseract ([0-9]+\.[0-9]+\.[0-9]+)", output.decode())
         if m is None:
             raise RuntimeError('unknown tesseract version number???')
         tesseract_version = m.group(1)
