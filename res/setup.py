@@ -362,13 +362,16 @@ projects:
     
         # figure out our configuration
         files = os.listdir(os.path.join(build_dir, 'bin'))
+        _LOGGER.info("files: {}".format(files))
         dll_files = [name for name in files \
                      if os.path.isfile(os.path.join(build_dir, 'bin', name)) and \
                      name.endswith('.dll')]
         lib_files = [name for name in files if os.path.isfile(os.path.join(build_dir, 'bin', name)) and \
                                                               name.endswith('.lib')]
         tesseract_dll_files.extend([os.path.join(build_dir, 'bin', name) for name in dll_files])
-    
+
+        _LOGGER.info("tesseract_dll_files: {}".format(tesseract_dll_files))
+
         # get the tesseract version from executable
         cmd = '%s -v' % os.path.join(build_dir, 'bin', 'tesseract.exe')
         args = shlex.split(cmd, posix=False)
