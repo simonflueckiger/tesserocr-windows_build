@@ -331,9 +331,7 @@ projects:
         build_tesseract_exe()
         _LOGGER.info("building packages done")
 
-        _LOGGER.info("test1")
         if strtobool(os.environ.get('TIMEZONE_PATCH', '0')):
-            _LOGGER.info("test2")
             patch_timezone_conflict(tesseract_major_version)
 
             _LOGGER.info("rebuilding packages after patch")
@@ -352,9 +350,11 @@ projects:
         p.stdout.close()
         return_code = p.wait()
 
+        _LOGGER.info(output.encode().decode())
+
         # simonflueckiger: added german success message check
         if output.find('Build succeeded.') < 0 and output.find('Buildvorgang wurde erfolgreich') < 0:
-            raise RuntimeError(output.decode())
+            raise RuntimeError(output.encode().decode())
     
         # figure out our configuration
         files = os.listdir(os.path.join(build_dir, 'bin'))
