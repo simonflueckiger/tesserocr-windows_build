@@ -109,9 +109,9 @@ void UNICHARSET::UNICHAR_PROPERTIES::Init() {
 // no useful values available.
 void UNICHARSET::UNICHAR_PROPERTIES::SetRangesOpen() {
   min_bottom = 0;
-  max_bottom = UINT8_MAX;
+  max_bottom = MAX_UINT8;
   min_top = 0;
-  max_top = UINT8_MAX;
+  max_top = MAX_UINT8;
   width = 0.0f;
   width_sd = 0.0f;
   bearing = 0.0f;
@@ -122,9 +122,9 @@ void UNICHARSET::UNICHAR_PROPERTIES::SetRangesOpen() {
 
 // Sets all ranges to empty. Used before expanding with font-based data.
 void UNICHARSET::UNICHAR_PROPERTIES::SetRangesEmpty() {
-  min_bottom = UINT8_MAX;
+  min_bottom = MAX_UINT8;
   max_bottom = 0;
-  min_top = UINT8_MAX;
+  min_top = MAX_UINT8;
   max_top = 0;
   width = 0.0f;
   width_sd = 0.0f;
@@ -805,9 +805,9 @@ bool UNICHARSET::load_via_fgets(
 
     strcpy(script, null_script);
     int min_bottom = 0;
-    int max_bottom = UINT8_MAX;
+    int max_bottom = MAX_UINT8;
     int min_top = 0;
-    int max_top = UINT8_MAX;
+    int max_top = MAX_UINT8;
     float width = 0.0f;
     float width_sd = 0.0f;
     float bearing = 0.0f;
@@ -900,9 +900,9 @@ void UNICHARSET::post_load_setup() {
   top_bottom_set_ = false;
   for (UNICHAR_ID id = 0; id < size_used; ++id) {
     int min_bottom = 0;
-    int max_bottom = UINT8_MAX;
+    int max_bottom = MAX_UINT8;
     int min_top = 0;
-    int max_top = UINT8_MAX;
+    int max_top = MAX_UINT8;
     get_top_bottom(id, &min_bottom, &max_bottom, &min_top, &max_top);
     if (min_top > 0)
       top_bottom_set_ = true;
@@ -1115,11 +1115,11 @@ int UNICHARSET::get_script_id_from_name(const char* script_name) const {
 // Removes/replaces content that belongs in rendered text, but not in the
 // unicharset.
 /* static */
-std::string UNICHARSET::CleanupString(const char* utf8_str, size_t length) {
+std::string UNICHARSET::CleanupString(const char* utf8_str, int length) {
   std::string result;
   result.reserve(length);
   char ch;
-  while ((ch = *utf8_str) != '\0' && length-- > 0) {
+  while ((ch = *utf8_str) != '\0' && --length >= 0) {
     int key_index = 0;
     const char* key;
     while ((key = kCleanupMaps[key_index][0]) != nullptr) {
