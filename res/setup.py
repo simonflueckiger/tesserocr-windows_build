@@ -248,6 +248,7 @@ if sys.platform == 'win32':
 
     leptonica_version = os.environ.get('LEPTONICA_VERSION', '1.74.4')
     tesseract_version = os.environ.get('TESSERACT_VERSION', '3.5.1')
+    skip_patches = os.environ.get('SKIP_PATCHES', '0')
 
     def prepare_tesseract_env(leptonica_version=leptonica_version, tesseract_version=tesseract_version):
         global tesseract_dll_files
@@ -304,8 +305,8 @@ projects:
     files: dummy.cpp
     dependencies:
       pvt.cppan.demo.danbloomberg.leptonica: %s
-      pvt.cppan.demo.google.tesseract.libtesseract: %s
-      pvt.cppan.demo.google.tesseract.tesseract: %s
+      pvt.simonflueckiger.tesseract.libtesseract: %s
+      pvt.simonflueckiger.tesseract.tesseract: %s
 """ % (generator, leptonica_version, tesseract_cppan_version, tesseract_cppan_version)
     
         with open(os.path.join(build_dir, 'cppan.yml'), 'w') as fp:
@@ -335,7 +336,7 @@ projects:
         build_tesseract_exe()
         _LOGGER.info("building packages done")
 
-        if strtobool(os.environ.get('TIMEZONE_PATCH', '0')):
+        if not skip_patches and strtobool(os.environ.get('TIMEZONE_PATCH', '0')):
             patch_timezone_conflict(tesseract_major_version)
 
             _LOGGER.info("rebuilding packages after patch")
