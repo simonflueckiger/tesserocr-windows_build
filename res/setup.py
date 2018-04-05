@@ -248,7 +248,7 @@ if sys.platform == 'win32':
 
     leptonica_version = os.environ.get('LEPTONICA_VERSION', '1.74.4')
     tesseract_version = os.environ.get('TESSERACT_VERSION', '3.5.1')
-    skip_patches = os.environ.get('SKIP_PATCHES', '0')
+    skip_patches = strtobool(os.environ.get('SKIP_PATCHES', '0'))
 
     def prepare_tesseract_env(leptonica_version=leptonica_version, tesseract_version=tesseract_version):
         global tesseract_dll_files
