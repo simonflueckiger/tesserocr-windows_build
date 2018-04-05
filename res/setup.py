@@ -31,7 +31,9 @@ def go_up(dir, n):
     return os.path.dirname(go_up(dir, n-1))
 
 
-def patch_timezone_conflict(tesseract_version):
+def apply_patches():
+    dirty_bit = False
+
     _LOGGER.info("\nPatching timezone naming conflict...\n------------------------------------")
 
     def find(name, path):
@@ -46,32 +48,38 @@ def patch_timezone_conflict(tesseract_version):
                 result.append(os.path.join(root, name))
         return result
 
-    home_dir = os.environ.get('USERPROFILE')
-    header_path = find("gettimeofday.h", home_dir + r"\.cppan\storage\src")
-    source_path = os.path.dirname(header_path)
-    h_path = source_path + '\gettimeofday.h'
-    cpp_path = source_path + '\gettimeofday.cpp'
 
-    with open(h_path, 'r+') as fp:
-        _LOGGER.info("patching {}".format(h_path))
-        contents = fp.read()
-        contents = contents.replace('timezone', 'not_used_timezone')
-        fp.truncate(0)
-        fp.seek(0)
-        fp.write(contents)
+    if strtobool(os.environ.get('TIMEZONE_PATCH', '0')):
+        dirty_bit = True
 
-    with open(cpp_path, 'r+') as fp:
-        _LOGGER.info("patching {}".format(cpp_path))
-        contents = fp.read()
-        contents = contents.replace('timezone', 'not_used_timezone')
-        fp.truncate(0)
-        fp.seek(0)
-        fp.write(contents)
+        home_dir = os.environ.get('USERPROFILE')
+        header_path = find("gettimeofday.h", home_dir + r"\.cppan\storage\src")
+        source_path = os.path.dirname(header_path)
+        h_path = source_path + '\gettimeofday.h'
+        cpp_path = source_path + '\gettimeofday.cpp'
+
+        with open(h_path, 'r+') as fp:
+            _LOGGER.info("patching {}".format(h_path))
+            contents = fp.read()
+            contents = contents.replace('timezone', 'not_used_timezone')
+            fp.truncate(0)
+            fp.seek(0)
+            fp.write(contents)
+
+        with open(cpp_path, 'r+') as fp:
+            _LOGGER.info("patching {}".format(cpp_path))
+            contents = fp.read()
+            contents = contents.replace('timezone', 'not_used_timezone')
+            fp.truncate(0)
+            fp.seek(0)
+            fp.write(contents)
+
 
     # patch unichar.h, unichar.cpp, unicharset.h, unicharset.cpp
     # this should be redundant for builds past commit ad6f3b412a9a18f3819ae9feaf872464c7bf0e7b when string was
     # changed to std::string
-    if tesseract_version >= 4:
+    if strtobool(os.environ.get('STRING_PATCH', '0')):
+        dirty_bit = True
 
         for type in [".h", ".cpp"]:
             unichar_path_from = "../res/patch/unichar" + type
@@ -84,23 +92,26 @@ def patch_timezone_conflict(tesseract_version):
             _LOGGER.info("patching {}".format(unicharset_path_to))
             shutil.copy(unicharset_path_from, unicharset_path_to)
 
-    # delete lnk folder
-    lnk_path = home_dir + "\.cppan\storage\lnk"
-    _LOGGER.info("deleting {}".format(lnk_path))
-    shutil.rmtree(lnk_path)
+    if dirty_bit:
+        # delete lnk folder
+        lnk_path = home_dir + "\.cppan\storage\lnk"
+        _LOGGER.info("deleting {}".format(lnk_path))
+        shutil.rmtree(lnk_path)
 
-    # # delete obj file
-    # obj_paths = find_all("gettimeofday.obj", home_dir + r"\.cppan\storage\obj")
-    # for obj_path in obj_paths:
-    #     os.remove(obj_path)
-    #     _LOGGER.info("removed {}".format(obj_path))
+        # # delete obj file
+        # obj_paths = find_all("gettimeofday.obj", home_dir + r"\.cppan\storage\obj")
+        # for obj_path in obj_paths:
+        #     os.remove(obj_path)
+        #     _LOGGER.info("removed {}".format(obj_path))
 
-    # delete obj folder
-    obj_folder_path = home_dir + "\.cppan\storage\obj"
-    _LOGGER.info("deleting {}".format(obj_folder_path))
-    shutil.rmtree(obj_folder_path)
+        # delete obj folder
+        obj_folder_path = home_dir + "\.cppan\storage\obj"
+        _LOGGER.info("deleting {}".format(obj_folder_path))
+        shutil.rmtree(obj_folder_path)
 
     _LOGGER.info("------------------------------------\n")
+
+    return dirty_bit
 
 def read(*parts):
     return codecs.open(pjoin(here, *parts), 'r').read()
@@ -248,7 +259,6 @@ if sys.platform == 'win32':
 
     leptonica_version = os.environ.get('LEPTONICA_VERSION', '1.74.4')
     tesseract_version = os.environ.get('TESSERACT_VERSION', '3.5.1')
-    skip_patches = strtobool(os.environ.get('SKIP_PATCHES', '0'))
 
     def prepare_tesseract_env(leptonica_version=leptonica_version, tesseract_version=tesseract_version):
         global tesseract_dll_files
@@ -287,10 +297,12 @@ if sys.platform == 'win32':
 
         tesseract_major_version = int(tesseract_version[0])
 
-        if tesseract_major_version >= 4:
-            tesseract_cppan_version = "master"
-        else:
-            tesseract_cppan_version = tesseract_version
+        # if tesseract_major_version >= 4:
+        #     tesseract_cppan_version = "master"
+        # else:
+        #     tesseract_cppan_version = tesseract_version
+
+        tesseract_cppan_version = os.environ.get('CPPAN_TESSERACT_VERSION', tesseract_version)
     
         cppan_config = """
 local_settings:
@@ -336,12 +348,12 @@ projects:
         build_tesseract_exe()
         _LOGGER.info("building packages done")
 
-        if not skip_patches and strtobool(os.environ.get('TIMEZONE_PATCH', '0')):
-            patch_timezone_conflict(tesseract_major_version)
 
+        if apply_patches():
             _LOGGER.info("rebuilding packages after patch")
             build_tesseract_exe()
             _LOGGER.info("rebuilding packages done")
+
 
         # build dummy.exe
         cmd = 'cppan --build .'
