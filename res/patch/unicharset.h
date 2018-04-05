@@ -136,8 +136,8 @@ class CHAR_FRAGMENT {
   // ie did not need chopping to be isolated, but may have been separated
   // out from a multi-outline blob.
   bool natural;
-  inT16 pos;    // fragment position in the character
-  inT16 total;  // total number of fragments in the character
+  int16_t pos;    // fragment position in the character
+  int16_t total;  // total number of fragments in the character
 };
 
 // The UNICHARSET class is an utility class for Tesseract that holds the
@@ -241,7 +241,7 @@ class UNICHARSET {
   static std::string CleanupString(const char* utf8_str) {
     return CleanupString(utf8_str, strlen(utf8_str));
   }
-  static std::string CleanupString(const char* utf8_str, int length);
+  static std::string CleanupString(const char* utf8_str, size_t length);
 
   // Return a STRING containing debug information on the unichar, including
   // the id_to_unichar, its hex unicodes and the properties.
@@ -582,13 +582,13 @@ class UNICHARSET {
                       int min_bottom, int max_bottom,
                       int min_top, int max_top) {
     unichars[unichar_id].properties.min_bottom =
-        static_cast<uinT8>(ClipToRange(min_bottom, 0, MAX_UINT8));
+        ClipToRange<int>(min_bottom, 0, UINT8_MAX);
     unichars[unichar_id].properties.max_bottom =
-        static_cast<uinT8>(ClipToRange(max_bottom, 0, MAX_UINT8));
+        ClipToRange<int>(max_bottom, 0, UINT8_MAX);
     unichars[unichar_id].properties.min_top =
-        static_cast<uinT8>(ClipToRange(min_top, 0, MAX_UINT8));
+        ClipToRange<int>(min_top, 0, UINT8_MAX);
     unichars[unichar_id].properties.max_top =
-        static_cast<uinT8>(ClipToRange(max_top, 0, MAX_UINT8));
+        ClipToRange<int>(max_top, 0, UINT8_MAX);
   }
   // Returns the width stats (as mean, sd) of the given unichar relative to the
   // median advance of all characters in the character set.
@@ -933,10 +933,10 @@ class UNICHARSET {
     // baseline-normalized coordinates, ie, where the baseline is
     // kBlnBaselineOffset and the meanline is kBlnBaselineOffset + kBlnXHeight
     // (See normalis.h for the definitions).
-    uinT8 min_bottom;
-    uinT8 max_bottom;
-    uinT8 min_top;
-    uinT8 max_top;
+    uint8_t min_bottom;
+    uint8_t max_bottom;
+    uint8_t min_top;
+    uint8_t max_top;
     // Statstics of the widths of bounding box, relative to the median advance.
     float width;
     float width_sd;
