@@ -49,7 +49,7 @@ def apply_patches():
         return result
 
 
-    if strtobool(os.environ.get('TIMEZONE_PATCH', '0')):
+    if strtobool(os.environ.get('TIMEZONE_PATCH', '0')) and not strtobool(os.environ.get('SKIP_TIMEZONE_PATCH', '0')):
         dirty_bit = True
 
         home_dir = os.environ.get('USERPROFILE')
