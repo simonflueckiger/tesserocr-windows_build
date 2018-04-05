@@ -48,15 +48,14 @@ def apply_patches():
                 result.append(os.path.join(root, name))
         return result
 
+    home_dir = os.environ.get('USERPROFILE')
+    header_path = find("gettimeofday.h", home_dir + r"\.cppan\storage\src")
+    source_path = os.path.dirname(header_path)
+    h_path = source_path + '\gettimeofday.h'
+    cpp_path = source_path + '\gettimeofday.cpp'
 
     if strtobool(os.environ.get('TIMEZONE_PATCH', '0')) and not strtobool(os.environ.get('SKIP_TIMEZONE_PATCH', '0')):
         dirty_bit = True
-
-        home_dir = os.environ.get('USERPROFILE')
-        header_path = find("gettimeofday.h", home_dir + r"\.cppan\storage\src")
-        source_path = os.path.dirname(header_path)
-        h_path = source_path + '\gettimeofday.h'
-        cpp_path = source_path + '\gettimeofday.cpp'
 
         with open(h_path, 'r+') as fp:
             _LOGGER.info("patching {}".format(h_path))
