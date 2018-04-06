@@ -415,7 +415,8 @@ projects:
         if m is None:
             raise RuntimeError('unknown tesseract version number???')
         tesseract_version = m.group(1)
-        tesseract_version_number = int(''.join(tesseract_version.split('.')), 16)
+        # tesseract_version_number = int(''.join(tesseract_version.split('.')), 16)
+        tesseract_version_number = version_to_int(tesseract_version)
 
         _LOGGER.info("extracted tesseract version from executable")
         _LOGGER.info("tesseract version: {}".format(tesseract_version))
