@@ -7,9 +7,9 @@ rem python setup.py bdist_wheel
 
 rem set TIMEZONE_PATCH=0
 
-set PATH=C:\Miniconda35;C:\Miniconda35\Scripts;%PATH%
-conda install Cython PyYAML --yes
-python setup.py bdist_wheel
+rem set PATH=C:\Miniconda35;C:\Miniconda35\Scripts;%PATH%
+rem conda install Cython PyYAML --yes
+rem python setup.py bdist_wheel
 
 set TIMEZONE_PATCH=0
 
