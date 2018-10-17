@@ -440,7 +440,7 @@ projects:
 
         _LOGGER.warning("contents: {}".format(contents))
     
-        m = re.search(r"set\(pvt_cppan_[0-9a-zA-Z_]+leptonica_DIR (?P<dir>.+)\)",
+        m = re.search(r"set.*\(pvt_cppan_[0-9a-zA-Z_]+leptonica_DIR (?P<dir>.+)\)",
                       contents)
         if not m:
             raise RuntimeError('cannot detect leptonica source codes')
@@ -456,7 +456,7 @@ projects:
                                                             'cppan', leptonica_hash))
         leptonica_top_dir = os.path.normpath(leptonica_top_dir)
     
-        m = re.search(r"set\(pvt_[0-9a-zA-Z_]+libtesseract_DIR (?P<dir>.+)\)",
+        m = re.search(r"set.*\(pvt_[0-9a-zA-Z_]+libtesseract_DIR (?P<dir>.+)\)",
                       contents)
         if not m:
             raise RuntimeError('cannot detect libtesseract source codes')
