@@ -437,6 +437,8 @@ projects:
         dummy_cmakefile = os.path.join(dummy_build_dir, 'cppan', 'CMakeLists.txt')
         with open(dummy_cmakefile, 'r') as fp:
             contents = fp.read()
+
+        _LOGGER.warning("contents: {}".format(contents))
     
         m = re.search(r"set\(pvt_cppan_[0-9a-zA-Z_]+leptonica_DIR (?P<dir>.+)\)",
                       contents)
