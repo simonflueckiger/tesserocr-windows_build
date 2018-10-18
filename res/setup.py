@@ -226,8 +226,8 @@ class BuildTesseract(build_ext):
             build_args = get_tesseract_version()
 
         if build_args['cython_compile_time_env']['TESSERACT_VERSION'] >= 0x040000:
-            _LOGGER.info('tesseract >= 4.00 requires c++11 compiler support (turned off atm)')
-            # build_args['extra_compile_args'] = ['-std=c++11', '-DUSE_STD_NAMESPACE']
+            _LOGGER.info('tesseract >= 4.00 requires c++11 compiler support')
+            build_args['extra_compile_args'] = ['-std=c++11']
 
         _LOGGER.info('build parameters: {}'.format(build_args))
         for k, v in build_args.items():
