@@ -466,7 +466,9 @@ projects:
         # copy header files from leptonica and libtesseract source tree
         os.makedirs(os.path.join(build_dir, 'include', 'leptonica'))
         os.makedirs(os.path.join(build_dir, 'include', 'tesseract'))
-    
+
+        # ------ Leptonica ------------------------------------------------------
+
         leptonica_src_dir = os.path.join(leptonica_top_dir, 'src')
         leptonica_h_files = [name for name in os.listdir(leptonica_src_dir) \
                              if name.endswith('.h') and \
@@ -474,7 +476,8 @@ projects:
         for name in leptonica_h_files:
             shutil.copy(os.path.join(leptonica_src_dir, name),
                         os.path.join(build_dir, 'include', 'leptonica'))
-    
+
+
         # take care of generated header files
         leptonica_h_files = [name for name in os.listdir(leptonica_build_dir) \
                              if name.endswith('.h') and \
@@ -482,21 +485,38 @@ projects:
         for name in leptonica_h_files:
             shutil.copy(os.path.join(leptonica_build_dir, name),
                         os.path.join(build_dir, 'include', 'leptonica'))
-        
+
+        # ------ Tesseract -------------------------------------------------------
+
+        _LOGGER.warning("libtesseract_src_dir: {}".format(libtesseract_src_dir))
+        _LOGGER.warning("leptonica_src_dir: {}".format(leptonica_src_dir))
+        _LOGGER.warning("leptonica_build_dir: {}".format(leptonica_build_dir))
+
         # from libtesseract source tree
         with open(os.path.join(libtesseract_src_dir, 'cppan.yml'), 'r') as fp:
             cppan_cfg = yaml.load(fp)
             subdirs = cppan_cfg['include_directories']['public']
-        
+
         for subdir in subdirs:
             subdir = os.path.normpath(os.path.join(libtesseract_src_dir, subdir))
             h_files = [name for name in os.listdir(subdir) \
                        if name.endswith('.h') and \
                        os.path.isfile(os.path.join(subdir, name))]
-            
+
             for name in h_files:
                 shutil.copy(os.path.join(subdir, name),
                             os.path.join(build_dir, 'include', 'tesseract'))
+
+        # # take care of generated header files
+        # for subdir in subdirs:
+        #     subdir = os.path.normpath(os.path.join(libtesseract_build_dir, subdir))
+        #     h_files = [name for name in os.listdir(subdir) \
+        #                if name.endswith('.h') and \
+        #                os.path.isfile(os.path.join(subdir, name))]
+        #
+        #     for name in h_files:
+        #         shutil.copy(os.path.join(subdir, name),
+        #                     os.path.join(build_dir, 'include', 'tesseract'))
 
         # simonflueckiger: not needed anymore
         # # need to patch the gettimeofday.h
