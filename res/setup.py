@@ -310,6 +310,7 @@ if sys.platform == 'win32':
         #     tesseract_cppan_version = tesseract_version
 
         tesseract_cppan_version = os.environ.get('CPPAN_TESSERACT_VERSION', tesseract_version)
+        tesseract_dll_version = os.environ.get('TESSERACT_DLL_VERSION', tesseract_cppan_version)
     
         cppan_config = """
 local_settings:
@@ -337,7 +338,7 @@ projects:
             _LOGGER.info("tesseract version: {}".format(tesseract_version))
             _LOGGER.info("tesseract cppan version: {}".format(tesseract_cppan_version))
 
-            cmd = 'cppan --build-packages pvt.simonflueckiger.tesseract.tesseract-%s' % tesseract_cppan_version
+            cmd = 'cppan --build-packages pvt.simonflueckiger.tesseract.tesseract-%s' % tesseract_dll_version
 
             # simonflueckiger: added a bit of verbosity to popen call
             p = subprocess.Popen(shlex.split(cmd), cwd=build_dir,
