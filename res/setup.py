@@ -412,13 +412,16 @@ projects:
         if p.returncode != 0:
             raise RuntimeError('tesseract execution failed????')
         m = re.search("tesseract ([0-9]+\.[0-9]+\.[0-9]+)", output.decode())
-        if m is None:
-            raise RuntimeError('unknown tesseract version number???')
-        tesseract_version = m.group(1)
+        if m is not None:
+            # change tesseract version to what we found in executable
+            tesseract_version = m.group(1)
+            _LOGGER.info("extracted tesseract version from executable")
+        else:
+            _LOGGER.warning('Unable to extract tesseract version from executable! Using env variable TESSERACT_VERSION')
+
         # tesseract_version_number = int(''.join(tesseract_version.split('.')), 16)
         tesseract_version_number = version_to_int(tesseract_version)
 
-        _LOGGER.info("extracted tesseract version from executable")
         _LOGGER.info("tesseract version: {}".format(tesseract_version))
         _LOGGER.info("tesseract version number: {}".format(tesseract_version_number))
     
@@ -437,8 +440,6 @@ projects:
         dummy_cmakefile = os.path.join(dummy_build_dir, 'cppan', 'CMakeLists.txt')
         with open(dummy_cmakefile, 'r') as fp:
             contents = fp.read()
-
-        _LOGGER.warning("contents: {}".format(contents))
     
         m = re.search(r"set.*\(pvt_cppan_[0-9a-zA-Z_]+leptonica_DIR (?P<dir>.+)\)",
                       contents)
