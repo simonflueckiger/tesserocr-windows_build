@@ -450,18 +450,29 @@ projects:
         leptonica_build_dir = leptonica_top_dir.replace('/src/','/obj/', 1)
         m = re.search('/[0-9a-fA-F]{2}/[0-9a-fA-F]{2}/[0-9a-fA-F]{4}$', leptonica_build_dir)
         if not m:
-            raise RuntimeError('unexpected source location directory name')
+            raise RuntimeError('unexpected leptonica source location directory name')
         leptonica_hash = m.group(0).replace('/', '')
         leptonica_build_dir = os.path.normpath(os.path.join(leptonica_build_dir, 
                                                             'build', magic_number,
                                                             'cppan', leptonica_hash))
         leptonica_top_dir = os.path.normpath(leptonica_top_dir)
+        leptonica_src_dir = os.path.join(leptonica_top_dir, 'src')
     
         m = re.search(r"set.*\(pvt_[0-9a-zA-Z_]+libtesseract_DIR (?P<dir>.+)\)",
                       contents)
         if not m:
             raise RuntimeError('cannot detect libtesseract source codes')
-        libtesseract_src_dir = os.path.normpath(m.group('dir'))
+
+        libtesseract_top_dir = m.group('dir')
+        libtesseract_build_dir = libtesseract_top_dir.replace('/src/','/obj/', 1)
+        m = re.search('/[0-9a-fA-F]{2}/[0-9a-fA-F]{2}/[0-9a-fA-F]{4}$', libtesseract_build_dir)
+        if not m:
+            raise RuntimeError('unexpected libtesseract source location directory name')
+        libtesseract_hash = m.group(0).replace('/', '')
+        libtesseract_build_dir = os.path.normpath(os.path.join(libtesseract_build_dir,
+                                                            'build', magic_number,
+                                                            'cppan', libtesseract_hash))
+        libtesseract_src_dir = os.path.normpath(libtesseract_top_dir)
     
         # copy header files from leptonica and libtesseract source tree
         os.makedirs(os.path.join(build_dir, 'include', 'leptonica'))
@@ -469,7 +480,7 @@ projects:
 
         # ------ Leptonica ------------------------------------------------------
 
-        leptonica_src_dir = os.path.join(leptonica_top_dir, 'src')
+
         leptonica_h_files = [name for name in os.listdir(leptonica_src_dir) \
                              if name.endswith('.h') and \
                              os.path.isfile(os.path.join(leptonica_src_dir, name))]
@@ -488,9 +499,12 @@ projects:
 
         # ------ Tesseract -------------------------------------------------------
 
-        _LOGGER.warning("libtesseract_src_dir: {}".format(libtesseract_src_dir))
-        _LOGGER.warning("leptonica_src_dir: {}".format(leptonica_src_dir))
-        _LOGGER.warning("leptonica_build_dir: {}".format(leptonica_build_dir))
+        _LOGGER.info("--------------------------------")
+        _LOGGER.info("libtesseract_src_dir: {}".format(libtesseract_src_dir))
+        _LOGGER.info("libtesseract_build_dir: {}".format(libtesseract_build_dir))
+        _LOGGER.info("leptonica_src_dir: {}".format(leptonica_src_dir))
+        _LOGGER.info("leptonica_build_dir: {}".format(leptonica_build_dir))
+        _LOGGER.info("--------------------------------")
 
         # from libtesseract source tree
         with open(os.path.join(libtesseract_src_dir, 'cppan.yml'), 'r') as fp:
@@ -507,16 +521,16 @@ projects:
                 shutil.copy(os.path.join(subdir, name),
                             os.path.join(build_dir, 'include', 'tesseract'))
 
-        # # take care of generated header files
-        # for subdir in subdirs:
-        #     subdir = os.path.normpath(os.path.join(libtesseract_build_dir, subdir))
-        #     h_files = [name for name in os.listdir(subdir) \
-        #                if name.endswith('.h') and \
-        #                os.path.isfile(os.path.join(subdir, name))]
-        #
-        #     for name in h_files:
-        #         shutil.copy(os.path.join(subdir, name),
-        #                     os.path.join(build_dir, 'include', 'tesseract'))
+        # take care of generated header files
+        h_files = [name for name in os.listdir(libtesseract_build_dir) \
+                             if name.endswith('.h') and \
+                             os.path.isfile(os.path.join(libtesseract_build_dir, name))]
+
+        _LOGGER.info("libtesseract generated header files: {}".format(h_files))
+
+        for name in h_files:
+            shutil.copy(os.path.join(libtesseract_build_dir, name),
+                        os.path.join(build_dir, 'include', 'tesseract'))
 
         # simonflueckiger: not needed anymore
         # # need to patch the gettimeofday.h
