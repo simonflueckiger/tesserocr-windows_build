@@ -1,3 +1,3 @@
-curl -fsS -L -o tesserocr-2.2.2-cp35-cp35m-win_amd64.whl %$64BIT_PY35%
+curl -fsS -L -o tesserocr-%$TESSEROCR_VER%-cp35-cp35m-win_amd64.whl %$64BIT_PY35%
 
-pip install tesserocr-2.2.2-cp35-cp35m-win_amd64.whl
+pip install tesserocr-%$TESSEROCR_VER%-cp35-cp35m-win_amd64.whl
