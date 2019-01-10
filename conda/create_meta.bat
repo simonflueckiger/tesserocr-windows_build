@@ -2,8 +2,8 @@ echo package: > meta.yaml
 echo     name: tesserocr >> meta.yaml
 echo     version: %TESSEROCR_VER% >> meta.yaml
 echo build: >> meta.yaml
-echo   number: %PYTHON_VERSION%_%BUILD_NUMBER% >> meta.yaml
-echo   string: tesseract_%TESSERACT_VER%_%BUILD_NUMBER% >> meta.yaml
+echo   number: %BUILD_NUMBER% >> meta.yaml
+echo   string: %PYTHON_VERSION%_tesseract_%TESSERACT_VER%_%BUILD_NUMBER% >> meta.yaml
 echo requirements: >> meta.yaml
 echo   build: >> meta.yaml
 echo     - python >> meta.yaml
