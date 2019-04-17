@@ -41,6 +41,8 @@ def apply_patches():
             if name in files:
                 return os.path.join(root, name)
 
+        return None
+
     def find_all(name, path):
         result = []
         for root, dirs, files in os.walk(path):
@@ -50,6 +52,12 @@ def apply_patches():
 
     home_dir = os.environ.get('USERPROFILE')
     header_path = find("gettimeofday.h", home_dir + r"\.cppan\storage\src")
+
+    _LOGGER.info("header files path: {}".format(header_path))
+    if header_path is None:
+        _LOGGER.warning("gettimeofday.h not found in {}".format(home_dir + r"\.cppan\storage\src"))
+        return
+
     source_path = os.path.dirname(header_path)
     h_path = source_path + '\gettimeofday.h'
     cpp_path = source_path + '\gettimeofday.cpp'
