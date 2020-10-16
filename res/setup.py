@@ -67,7 +67,7 @@ setup(
     name="tesserocr",
     version="2.5.1",
     description='A simple, Pillow-friendly, Python wrapper around tesseract-ocr API using Cython',
-    long_description=read(R"C:\Source\Repos\tesserocr\README.rst"),
+    long_description=read(R"README.rst"),
     long_description_content_type='text/x-rst',
     url='https://github.com/sirfz/tesserocr',
     author='Fayez Zouheiry',
