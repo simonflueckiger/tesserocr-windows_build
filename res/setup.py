@@ -51,12 +51,12 @@ ext_module_dostuff = Extension(
     language="c++",
     include_dirs=[
         R"C:/Tools/vcpkg/installed/x64-windows/include",
-        R"C:/projects/tesserocr-windows-cmake/tesseract/include",
+        # R"C:/projects/tesserocr-windows-cmake/tesseract/include",
     ],
-    libraries=["leptonica-1.78.0", "tesseract41"],
+    libraries=["leptonica-1.76.0", "tesseract41"],
     library_dirs=[
         # tesseract .lib import library
-        R"C:/projects/tesserocr-windows-cmake/tesseract/build/Release",
+        # R"C:/projects/tesserocr-windows-cmake/tesseract/build/Release",
 
         # leptonica (and deps) .lib import libraries
         R"C:/Tools/vcpkg/installed/x64-windows/lib"
