@@ -8,6 +8,7 @@ environment:
 build_script:
   - pwsh: |
       # pull tesserocr submodule
+      fail-test
       git submodule update --init --recursive
 
       # copy files into newly pulled submodule
