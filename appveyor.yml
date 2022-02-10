@@ -1,0 +1,90 @@
+version: 1.0.{build}
+image: Visual Studio 2022
+
+environment:
+  VCPKG_COMMIT_ID: f315dea
+  
+build_script:
+- pwsh: >-
+    
+    # pull tesserocr submodule
+    git submodule update --init --recursive
+    
+    # copy files into newly pulled submodule
+    Copy-Item -Path "res\setup.py" -Destination "tesserocr"
+    Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
+    
+    # install and initialize vcpkg
+    git clone https://github.com/Microsoft/vcpkg.git
+    cd vcpkg
+    git checkout $env:VCPKG_COMMIT_ID
+    .\bootstrap-vcpkg.bat
+    
+    # prevent debug build
+    Add-Content -Path .\triplets\x64-windows.cmake -Value 'set(VCPKG_BUILD_TYPE release)'
+    Add-Content -Path .\triplets\x86-windows.cmake -Value 'set(VCPKG_BUILD_TYPE release)'
+    
+    # build x64 and x86
+    vcpkg install tesseract:x64-windows tesseract:x86-windows
+    
+    # set VCPKG_PATH for setup.py
+    $env:VCPKG_PATH = "$PWD\vcpkg"
+    
+    cd ../tesserocr
+    
+    # for each {64bit and 32bit} x {Python 3.6, 3.7, 3.8, 3.9, 3.10}
+    ForEach ($platform_x64 in @($true, $false)) {
+        ForEach ($py_ver in @("36", "37", "38", "39", "310")) {
+            
+            # set platform/python-version specific variables
+            if ($platform_x64) {
+                $env:BUILD_PLATFORM = "x64"
+                $env:TESSERACT_VERSION = (Get-ChildItem -Path $env:VCPKG_PATH\installed\x64-windows\bin\*tesseract*.dll).VersionInfo.ProductVersion
+                $env:Path = "C:\Python$py_ver-x64;" + $env:Path
+            } else {
+                $env:BUILD_PLATFORM = "x32"
+                $env:TESSERACT_VERSION = (Get-ChildItem -Path $env:VCPKG_PATH\installed\x86-windows\bin\*tesseract*.dll).VersionInfo.ProductVersion
+                $env:Path = "C:\Python$py_ver;" + $env:Path
+            }
+            
+            # install requirements
+            python -m pip install --no-warn-script-location --no-input -r requirements-dev.txt
+            
+            # build wheel
+            python setup.py bdist_wheel
+        }
+    }
+
+test_script:
+- pwsh: >-
+    
+    # test suite needs TESSDATA_PREFIX to point to a valid tessdata location 
+    $env:TESSDATA_PREFIX = "$PWD\res\tessdata"
+    
+    # for each {64bit and 32bit} x {Python 3.6, 3.7, 3.8, 3.9, 3.10}
+    ForEach ($platform_x64 in @($true, $false)) {
+        ForEach ($py_ver in @("36", "37", "38", "39", "310")) {
+            
+            # set platform/python-version specific variables
+            if ($platform_x64) {
+                $env:Path = "C:\Python$py_ver-x64;" + $env:Path
+                $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*amd64*.whl
+            } else {
+                $env:Path = "C:\Python$py_ver;" + $env:Path
+                $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*win32*.whl
+            }
+            
+            # install previously built wheels
+            python -m pip install $wheel_path
+            
+            # execute test suite
+            python tesserocr\tests\test_api.py
+            
+            # throw immediately if not all test passed
+            if ($LastExitCode -ne 0) { exit $LastExitCode }
+        }
+    }
+
+artifacts:
+- path: tesserocr\dist\*
+  name: wheels
