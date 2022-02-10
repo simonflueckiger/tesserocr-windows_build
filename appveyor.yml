@@ -20,15 +20,15 @@ build_script:
     git checkout $env:VCPKG_COMMIT_ID
     .\bootstrap-vcpkg.bat
     
+    # set VCPKG_PATH for setup.py
+    $env:VCPKG_PATH = "$PWD"
+    
     # prevent debug build
     Add-Content -Path .\triplets\x64-windows.cmake -Value 'set(VCPKG_BUILD_TYPE release)'
     Add-Content -Path .\triplets\x86-windows.cmake -Value 'set(VCPKG_BUILD_TYPE release)'
     
     # build x64 and x86
     vcpkg install tesseract:x64-windows tesseract:x86-windows
-    
-    # set VCPKG_PATH for setup.py
-    $env:VCPKG_PATH = "$PWD\vcpkg"
     
     cd ../tesserocr
     
