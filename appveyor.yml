@@ -1,13 +1,9 @@
 version: 1.0.{build}
-image: Visual Studio 2017
+image: Visual Studio 2022
 
 environment:
-  
-  matrix:
-    # https://github.com/microsoft/vcpkg/blob/master/ports/tesseract/vcpkg.json
-    - VCPKG_COMMIT_ID: 6545887 # Tesseract 3.05.02
-
-    - VCPKG_COMMIT_ID: f315dea # Tesseract 4.1.1#9
+  # https://github.com/microsoft/vcpkg/blob/master/ports/tesseract/vcpkg.json
+  VCPKG_COMMIT_ID: f315dea # Tesseract 4.1.1#9
 
 build_script:
   - pwsh: |
@@ -32,7 +28,7 @@ build_script:
       Add-Content -Path .\triplets\x86-windows.cmake -Value 'set(VCPKG_BUILD_TYPE release)'
 
       # build x64 and x86
-      vcpkg install tesseract:x64-windows tesseract:x86-windows
+      .\vcpkg.exe install tesseract:x64-windows tesseract:x86-windows
 
       cd ../tesserocr
 
