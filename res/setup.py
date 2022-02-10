@@ -39,12 +39,52 @@ def find_version(*file_paths):
     raise RuntimeError("Unable to find version string.")
 
 
+def major_version(version):
+    versions = version.split('.')
+    major = int(versions[0])
+    _LOGGER.info('Tesseract major version %s', major)
+    return major
+
+
+def version_to_int(version):
+    subversion = None
+    subtrahend = 0
+    # Subtracts a certain amount from the version number to differentiate
+    # between alpha, beta and release versions.
+    if 'alpha' in version:
+        version_split = version.split('alpha')
+        subversion = version_split[1]
+        subtrahend = 2
+    elif 'beta' in version:
+        version_split = version.split('beta')
+        subversion = version_split[1]
+        subtrahend = 1
+
+    version = re.search(r'((?:\d+\.)+\d+)', version).group()
+    # Split the groups on ".", take only the first one, and print each
+    # group with leading 0 if needed. To be safe, also handle cases where
+    # an extra group is added to the version string, or if one or two
+    # groups are dropped.
+    version_groups = (version.split('.') + [0, 0])[:3]
+    version_str = '{:02}{:02}{:02}'.format(*map(int, version_groups))
+    version_str = str((int(version_str, 10) - subtrahend))
+    # Adds a 2 digit subversion number for the subversionrelease.
+    subversion_str = '00'
+    if subversion is not None and subversion != '':
+        subversion = re.search(r'(?:\d+)', subversion).group()
+        subversion_groups = (subversion.split('-') + [0, 0])[:1]
+        subversion_str = '{:02}'.format(*map(int, subversion_groups))
+
+    version_str += subversion_str
+    return int(version_str, 16)
+
+
 def find_libraries(library_stems, search_path, extension):
     library_paths = []
 
-    for lib_stem in library_stems:
-        library_filename = [filename for filename in os.listdir(search_path) if re.search(r"^{}[-\.\d]+.*{}$".format(lib_stem, extension), filename)]
-        assert len(library_filename) == 1, f"multiple runtime libraries found in {search_path} which match \"{lib_stem}\" stem"
+    for library_stem in library_stems:
+        library_filename = [filename for filename in os.listdir(search_path) if re.search(r"^{}[-\.\d]+.*{}$".format(library_stem, extension), filename)]
+        assert len(library_filename) == 1, f"multiple libraries found in {search_path} which match \"{library_stem}\" stem"
         library_paths.append(os.path.join(search_path, library_filename[0]))
 
     return library_paths
@@ -54,12 +94,15 @@ class my_build_ext(build_ext, object):
     def initialize_options(self):
         build_ext.initialize_options(self)
 
+        find_libraries(["tesseract"], vcpkg_bin, "dll")
+
         self.cython_compile_time_env = {
-            'TESSERACT_VERSION': 67174912,
-            'TESSERACT_MAJOR_VERSION': 4
+            'TESSERACT_VERSION': tesseract_version_int,
+            'TESSERACT_MAJOR_VERSION': tesseract_version_major
         }
         self.extra_compile_args = [
-            '-std=c++11'
+            '/std:c11',
+            '-DUSE_STD_NAMESPACE'
         ]
 
     def build_extension(self, ext):
@@ -99,6 +142,11 @@ class ExtensionWithDLL(Extension):
 TESSERACT_VERSION = get_environment_variable('TESSERACT_VERSION')
 VCPKG_PATH = get_environment_variable('VCPKG_PATH')
 BUILD_PLATFORM = get_environment_variable('BUILD_PLATFORM')
+
+# parse tesseract version
+tesseract_version_int = version_to_int(TESSERACT_VERSION)
+tesseract_version_major = major_version(TESSERACT_VERSION)
+_LOGGER.info(f"Tesseract version {TESSERACT_VERSION} converted to {tesseract_version_int} int representation")
 
 vcpkg_bin = Rf"{VCPKG_PATH}\installed\{BUILD_PLATFORM}-windows\bin"
 vcpkg_lib = Rf"{VCPKG_PATH}\installed\{BUILD_PLATFORM}-windows\lib"
