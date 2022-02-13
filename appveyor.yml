@@ -11,6 +11,11 @@ environment:
     - job_name: Build Conda Packages
       job_depends_on: Build Wheels
 
+# don't build if only readme changed
+skip_commits:
+  files:
+    - README.md
+
 # the first failed job cancels other jobs and fails entire build
 matrix:
   fast_finish: true
