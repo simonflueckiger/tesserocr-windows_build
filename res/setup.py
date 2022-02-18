@@ -97,8 +97,6 @@ class my_build_ext(build_ext, object):
     def initialize_options(self):
         build_ext.initialize_options(self)
 
-        find_libraries(["tesseract"], vcpkg_bin, "dll")
-
         self.cython_compile_time_env = {
             'TESSERACT_VERSION': tesseract_version_int,
             'TESSERACT_MAJOR_VERSION': tesseract_version_major
