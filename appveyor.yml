@@ -90,12 +90,12 @@ for:
                   # BUILD_PLATFORM and TESSERACT_VERSION are used in setup.py
                   if ($platform_x64) {
                       $env:BUILD_PLATFORM = "x64"
-                      $env:TESSERACT_VERSION = (Get-ChildItem -Path $env:VCPKG_PATH\installed\x64-windows\bin\*tesseract*.dll).VersionInfo.ProductVersion
+                      $env:TESSERACT_VERSION = (Get-ChildItem -Path $tesseract_install_64\bin\*tesseract*.dll).VersionInfo.ProductVersion
                       $env:TESSERACT_INSTALL_PATH = $tesseract_install_64
                       $env:Path = "C:\Python$py_ver-x64;" + $env:Path
                   } else {
                       $env:BUILD_PLATFORM = "x86"
-                      $env:TESSERACT_VERSION = (Get-ChildItem -Path $env:VCPKG_PATH\installed\x86-windows\bin\*tesseract*.dll).VersionInfo.ProductVersion
+                      $env:TESSERACT_VERSION = (Get-ChildItem -Path $tesseract_install_32\bin\*tesseract*.dll).VersionInfo.ProductVersion
                       $env:TESSERACT_INSTALL_PATH = $tesseract_install_32
                       $env:Path = "C:\Python$py_ver;" + $env:Path
                   }
