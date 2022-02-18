@@ -3,7 +3,7 @@ image: Visual Studio 2022
 
 environment:
   TESSERACT_COMMIT_ID: 5d5cd77 # Tesseract 5.0.1
-  
+
   # https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json
   VCPKG_COMMIT_ID: fd8a264 # Leptonica 1.81.1
 
@@ -37,7 +37,7 @@ for:
           Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
 
           # ------ Build Leptonica ----------------------------------------
-          
+
           # install and initialize vcpkg
           git clone https://github.com/Microsoft/vcpkg.git
           cd vcpkg
@@ -53,28 +53,30 @@ for:
 
           # build Leptonica x64 and x86
           .\vcpkg.exe install leptonica:x64-windows leptonica:x86-windows
-          
+
           cd ..
-          
+
           # ------ Build Tesseract ----------------------------------------
-          
+
           # prepare install directories
           $tesseract_install_64 = Join-Path -Path $PWD -ChildPath "tesseract_install_64"
           $tesseract_install_32 = Join-Path -Path $PWD -ChildPath "tesseract_install_32"
           New-Item $tesseract_install_64 -ItemType Directory
           New-Item $tesseract_install_32 -ItemType Directory
-          
+
           # clone and checkout Tesseract
           git clone https://github.com/tesseract-ocr/tesseract.git
           cd tesseract
           git checkout $env:TESSERACT_COMMIT_ID
-          
+
           # build Tesseract x64 and x86
-          cmake -G "Visual Studio 17 2022" -A x64 -S . -B "build_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$tesseract_install_64 -DCMAKE_PREFIX_PATH=$tesseract_install_64 -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_PATH\scripts\buildsystems\vcpkg.cmake"
-          cmake -G "Visual Studio 17 2022" -A Win32 -S . -B "build_32" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$tesseract_install_32 -DCMAKE_PREFIX_PATH=$tesseract_install_32 -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_PATH\scripts\buildsystems\vcpkg.cmake"
-          
+          cmake -G "Visual Studio 17 2022" -A x64 -S . -B "build_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_64" -DCMAKE_PREFIX_PATH="$tesseract_install_64" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_PATH\scripts\buildsystems\vcpkg.cmake"
+          cmake -G "Visual Studio 17 2022" -A Win32 -S . -B "build_32" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_32" -DCMAKE_PREFIX_PATH="$tesseract_install_32" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_PATH\scripts\buildsystems\vcpkg.cmake"
+
           cmake --build build_64 --config Release --target install
           cmake --build build_32 --config Release --target install
+          
+          cd ..
 
           # ------ Build tesserocr ----------------------------------------
 
