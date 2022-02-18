@@ -69,13 +69,16 @@ for:
           cd tesseract
           git checkout $env:TESSERACT_COMMIT_ID
 
+          # store Tesseract version in env variable for setup.py
+          $env:TESSERACT_VERSION = Get-Content -Path .\VERSION -TotalCount 1
+
           # build Tesseract x64 and x86
           cmake -G "Visual Studio 17 2022" -A x64 -S . -B "build_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_64" -DCMAKE_PREFIX_PATH="$tesseract_install_64" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_PATH\scripts\buildsystems\vcpkg.cmake"
           cmake -G "Visual Studio 17 2022" -A Win32 -S . -B "build_32" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_32" -DCMAKE_PREFIX_PATH="$tesseract_install_32" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_PATH\scripts\buildsystems\vcpkg.cmake"
 
           cmake --build build_64 --config Release --target install
           cmake --build build_32 --config Release --target install
-          
+
           cd ..
 
           # ------ Build tesserocr ----------------------------------------
@@ -90,12 +93,10 @@ for:
                   # BUILD_PLATFORM and TESSERACT_VERSION are used in setup.py
                   if ($platform_x64) {
                       $env:BUILD_PLATFORM = "x64"
-                      $env:TESSERACT_VERSION = (Get-ChildItem -Path $tesseract_install_64\bin\*tesseract*.dll).VersionInfo.ProductVersion
                       $env:TESSERACT_INSTALL_PATH = $tesseract_install_64
                       $env:Path = "C:\Python$py_ver-x64;" + $env:Path
                   } else {
                       $env:BUILD_PLATFORM = "x86"
-                      $env:TESSERACT_VERSION = (Get-ChildItem -Path $tesseract_install_32\bin\*tesseract*.dll).VersionInfo.ProductVersion
                       $env:TESSERACT_INSTALL_PATH = $tesseract_install_32
                       $env:Path = "C:\Python$py_ver;" + $env:Path
                   }
