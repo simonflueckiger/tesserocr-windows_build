@@ -84,7 +84,7 @@ for:
           }
 
           # apply patches if any
-          $patch_directory = "..\tesserocr\res\patches\$env:TESSERACT_COMMIT_ID"
+          $patch_directory = "..\res\patches\$env:TESSERACT_COMMIT_ID"
 
           if (Test-Path -Path $patch_directory) {
             Get-ChildItem $patch_directory | 
