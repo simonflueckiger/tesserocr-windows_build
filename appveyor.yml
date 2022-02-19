@@ -82,14 +82,18 @@ for:
             $match_found = $content -match 'TESSERACT_VERSION_STR "(.*)"'
             $env:TESSERACT_VERSION = $Matches[1]
           }
-          
+
           # apply patches if any
           $patch_directory = "..\tesserocr\res\patches\$env:TESSERACT_COMMIT_ID"
 
-          Get-ChildItem $patch_directory | 
-          Foreach-Object {
-              "applying $_"
-              git apply $_.FullName
+          if (Test-Path -Path $patch_directory) {
+            Get-ChildItem $patch_directory | 
+            Foreach-Object {
+                "applying $_"
+                git apply $_.FullName
+            }
+          } else {
+            "no patches found for Tesseract commit $env:TESSERACT_COMMIT_ID"
           }
 
           # build Tesseract x64 and x86
