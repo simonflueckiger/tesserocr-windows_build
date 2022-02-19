@@ -1,28 +1,3 @@
-diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 25ded3c2..1b0e649a 100644
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
-@@ -157,7 +157,6 @@ include_directories(dict)
- include_directories(neural_networks/runtime)
- include_directories(opencl)
- include_directories(textord)
--include_directories(vs2010/port)
- include_directories(viewer)
- include_directories(wordrec)
- 
-@@ -197,12 +196,6 @@ file(GLOB tesseract_hdr
-     viewer/*.h
-     wordrec/*.h
- )
--if (WIN32)
--    file(GLOB tesseract_win32_src "vs2010/port/*.cpp")
--    file(GLOB tesseract_win32_hdr "vs2010/port/*.h")
--    set(tesseract_src ${tesseract_src} ${tesseract_win32_src})
--    set(tesseract_hdr ${tesseract_hdr} ${tesseract_win32_hdr})
--endif()
- 
- set(tesseract_src ${tesseract_src}
-     api/baseapi.cpp
 diff --git a/ccutil/ocrclass.h b/ccutil/ocrclass.h
 index cb83c6d6..7a1ce538 100644
 --- a/ccutil/ocrclass.h
@@ -94,47 +69,6 @@ index cb83c6d6..7a1ce538 100644
    }
  };
  
-diff --git a/cmake/SourceGroups.cmake b/cmake/SourceGroups.cmake
-index 7e79927e..559566f6 100644
---- a/cmake/SourceGroups.cmake
-+++ b/cmake/SourceGroups.cmake
-@@ -36,5 +36,4 @@ source_group("neural"       "${SSRC}/neural_networks/runtime/${H_CPP}")
- source_group("opencl"       "${SSRC}/opencl/${H_CPP}")
- source_group("textord"      "${SSRC}/textord/${H_CPP}")
- source_group("viewer"       "${SSRC}/viewer/${H_CPP}")
--source_group("port"         "${SSRC}/vs2010/port/${H_CPP}")
- source_group("wordrec"      "${SSRC}/wordrec/${H_CPP}")
-diff --git a/cppan.yml b/cppan.yml
-index ef38d520..43dc2050 100644
---- a/cppan.yml
-+++ b/cppan.yml
-@@ -49,8 +49,6 @@ projects:
-           - viewer/.*\.h
-           - wordrec/.*\.h
- 
--          - vs2010/port/.*
--
-         exclude_from_build:
-           - api/tesseractmain.cpp
-           - viewer/svpaint.cpp
-@@ -65,7 +63,6 @@ projects:
-             - neural_networks/runtime
-             - opencl
-             - textord
--            - vs2010/port
-             - viewer
-             - wordrec
-           #public:
-@@ -114,9 +111,6 @@ projects:
- 
-         post_sources: |
-             file_write_once(${BDIR}/config_auto.h "")
--            if (NOT WIN32)
--                remove_src_dir(vs2010/port/*)
--            endif()
- 
-         options:
-             any:
 diff --git a/vs2010/port/gettimeofday.cpp b/vs2010/port/gettimeofday.cpp
 deleted file mode 100644
 index b7852453..00000000
