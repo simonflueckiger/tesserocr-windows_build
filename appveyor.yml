@@ -2,13 +2,19 @@ version: 1.0.{build}
 image: Visual Studio 2022
 
 environment:
-  TESSERACT_COMMIT_ID: 5d5cd77 # Tesseract 5.0.1
+  
 
   # https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json
   VCPKG_COMMIT_ID: fd8a264 # Leptonica 1.81.1
 
   matrix:
-    - job_name: Build Wheels
+    - job_name: Build Wheels - Tesseract 5.x
+    - job_group: Build Wheels
+    - TESSERACT_COMMIT_ID: 5d5cd77 # Tesseract 5.0.1
+    
+    - job_name: Build Wheels - Tesseract 3.x
+    - job_group: Build Wheels
+    - TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
 
     - job_name: Build Conda Packages
       job_depends_on: Build Wheels
@@ -25,7 +31,7 @@ matrix:
 for:
   - matrix:
       only:
-        - job_name: Build Wheels
+        - job_group: Build Wheels
 
     build_script:
       - pwsh: |
