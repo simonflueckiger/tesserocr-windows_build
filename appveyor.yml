@@ -2,8 +2,6 @@ version: 1.0.{build}
 image: Visual Studio 2022
 
 environment:
-  
-
   # https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json
   VCPKG_COMMIT_ID: fd8a264 # Leptonica 1.81.1
 
@@ -76,7 +74,14 @@ for:
           git checkout $env:TESSERACT_COMMIT_ID
 
           # store Tesseract version in env variable for setup.py
-          $env:TESSERACT_VERSION = Get-Content -Path .\VERSION -TotalCount 1
+          if (Test-Path ".\VERSION" -PathType Leaf) {
+            $env:TESSERACT_VERSION = Get-Content -Path .\VERSION -TotalCount 1
+          } elseif (Test-Path ".\api\baseapi.h" -PathType Leaf) {
+            # older version -> get version from ".\api\baseapi.h"
+            $content = Get-Content -Path ".\api\baseapi.h" -Raw
+            $match_found = $content -match 'TESSERACT_VERSION_STR "(.*)"'
+            $env:TESSERACT_VERSION = $Matches[1]
+          }
 
           # build Tesseract x64 and x86
           cmake -G "Visual Studio 17 2022" -A x64 -S . -B "build_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_64" -DCMAKE_PREFIX_PATH="$tesseract_install_64" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_PATH\scripts\buildsystems\vcpkg.cmake"
