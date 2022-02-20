@@ -1,0 +1,13 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 4bbf7000..2b1282a0 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -515,7 +515,7 @@ endif()
+ add_executable                  (tesseract ${tesseractmain_src} ${tesseractmain_rsc})
+ target_link_libraries           (tesseract libtesseract)
+ if (HAVE_TIFFIO_H)
+-    target_link_libraries(tesseract tiff)
++    target_link_libraries(tesseract TIFF::TIFF)
+ endif()
+ 
+ if (OPENMP_BUILD AND UNIX)
