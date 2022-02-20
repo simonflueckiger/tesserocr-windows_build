@@ -6,10 +6,14 @@ environment:
   VCPKG_COMMIT_ID: fd8a264 # Leptonica 1.81.1
 
   matrix:
-    # - job_name: Build Wheels - Tesseract 3.x
-    #   job_group: Build Wheels
-    #   TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
+    - job_name: Build Wheels - Tesseract 3.x
+      job_group: Build Wheels
+      TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
       
+    - job_name: Build Conda Packages - Tesseract 3.x
+      job_group: Build Conda Packages
+      job_depends_on: Build Wheels - Tesseract 3.x
+
     - job_name: Build Wheels - Tesseract 4.x
       job_group: Build Wheels
       TESSERACT_COMMIT_ID: f38e7a7 # Tesseract 4.1.3
@@ -39,7 +43,7 @@ for:
     build_script:
       - pwsh: |
           #iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-          
+
           # pull tesserocr submodule
           git submodule update --init --recursive
 
@@ -143,7 +147,7 @@ for:
           # create archive for convenience
           $zip_name = "wheels_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
           Compress-Archive -Path dist\*.whl -DestinationPath dist\$zip_name
-          
+
           #$blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
     test_script:
