@@ -187,7 +187,7 @@ for:
 
   - matrix:
       only:
-        - job_name: Build Conda Packages
+        - job_group: Build Conda Packages
 
     build_script:
       - pwsh: |
