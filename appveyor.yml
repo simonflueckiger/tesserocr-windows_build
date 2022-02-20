@@ -191,9 +191,10 @@ for:
           New-Item conda_build -ItemType Directory
           New-Item tesserocr\dist -ItemType Directory
 
-          # call AppVeyor api to get job id of 'Build Wheels'
+          # call AppVeyor api to get the id of the 'Build Wheels' job corresponding to this job's Tesseract version
           $request = Invoke-WebRequest -Uri "https://ci.appveyor.com/api/projects/simonflueckiger/tesserocr-windows-build/build/$env:APPVEYOR_BUILD_VERSION" -Method:Get -ContentType "application/xml"
-          $job = ([xml]$request.Content).ProjectBuildResults.Build.Jobs.BuildJobModel | Where-Object Name -eq 'Build Wheels'
+          $job_suffix = ($env:APPVEYOR_JOB_NAME -split " ")[-1]
+          $job = ([xml]$request.Content).ProjectBuildResults.Build.Jobs.BuildJobModel | Where-Object Name -match "Build Wheels.*$job_suffix"
 
           # piece together the wheels zip artifact url from 'Build Wheels' job
           $url = "https://ci.appveyor.com/api/buildjobs/" + $job.JobId + "/artifacts/tesserocr%2Fdist%2Fwheels_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
