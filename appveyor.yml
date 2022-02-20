@@ -18,10 +18,9 @@ environment:
     #   job_group: Build Wheels
     #   TESSERACT_COMMIT_ID: 5d5cd77 # Tesseract 5.0.1
 
-    - job_name: Build Conda Packages
-      PARENT_JOB: Build Wheels - Tesseract 4.x
-      job_group: ${PARENT_JOB}
-      job_depends_on: ${PARENT_JOB}
+    - job_name: Build Conda Packages - Tesseract 4.x
+      job_group: Build Conda Packages
+      job_depends_on: Build Wheels - Tesseract 4.x
 
 # don't build if only readme changed
 skip_commits:
