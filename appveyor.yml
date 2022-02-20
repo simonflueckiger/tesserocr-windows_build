@@ -145,8 +145,9 @@ for:
           }
 
           # create archive for convenience
+          $env:TESSERACT_VERSION | Out-File -FilePath tesseract_version.txt
           $zip_name = "wheels_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
-          Compress-Archive -Path dist\*.whl -DestinationPath dist\$zip_name
+          Compress-Archive -Path dist\*.whl, tesseract_version.txt -DestinationPath dist\$zip_name
 
           #$blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
@@ -214,6 +215,9 @@ for:
               $match_found = $wheel.Name -match 'tesserocr-\d+\.\d+\.\d+-cp(\d+).*(?:win(32)|amd(64)).*\.whl'
               $packages += @{ wheel = $wheel; py_ver = $Matches[1].Insert(1,'.'); py_ver_str = $Matches[1]; platform_x64 = if ($Matches[3] -eq "64") { $true } else { $false } }
           }
+          
+          # get Tesseract version from file
+          $env:TESSERACT_VERSION = Get-Content -Path tesserocr\dist\tesseract_version.txt -TotalCount 1
 
           ForEach ($platform_x64 in @($true, $false)) {
               
@@ -249,7 +253,7 @@ for:
                   # create unique folder and call "conda_setup_build_env.py" to generate meta.yaml and bld.bat for this specific package 
                   if ($platform_x64) { $conda_folder = "conda_py" + $py_ver_str + "_x64" } else { $conda_folder = "conda_py" + $py_ver_str + "_x86" }
                   New-Item $conda_folder -ItemType Directory
-                  python res\conda_setup_build_env.py "$PWD\tesserocr\dist\$package_name" 4.1.1 $conda_folder
+                  python res\conda_setup_build_env.py "$PWD\tesserocr\dist\$package_name" $env:TESSERACT_VERSION $conda_folder
                   
                   # finally invoke "conda build"
                   conda build $conda_folder --output-folder conda_build --python $py_ver --no-include-recipe --no-anaconda-upload --old-build-string
