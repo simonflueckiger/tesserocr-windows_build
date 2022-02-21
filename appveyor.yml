@@ -42,7 +42,7 @@ for:
 
     build_script:
       - pwsh: |
-          exit 0
+          #exit 0
           
           #iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
