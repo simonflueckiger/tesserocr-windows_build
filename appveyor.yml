@@ -2,14 +2,33 @@ version: 1.0.{build}
 image: Visual Studio 2022
 
 environment:
-  # https://github.com/microsoft/vcpkg/blob/master/ports/tesseract/vcpkg.json
-  VCPKG_COMMIT_ID: f315dea # Tesseract 4.1.1#9
+  # https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json
+  VCPKG_COMMIT_ID: fd8a264 # Leptonica 1.81.1
 
   matrix:
-    - job_name: Build Wheels
+    - job_name: Build Wheels - Tesseract 3.x
+      job_group: Build Wheels
+      TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
+      
+    - job_name: Build Conda Packages - Tesseract 3.x
+      job_group: Build Conda Packages
+      job_depends_on: Build Wheels - Tesseract 3.x
 
-    - job_name: Build Conda Packages
-      job_depends_on: Build Wheels
+    - job_name: Build Wheels - Tesseract 4.x
+      job_group: Build Wheels
+      TESSERACT_COMMIT_ID: f38e7a7 # Tesseract 4.1.3
+
+    - job_name: Build Conda Packages - Tesseract 4.x
+      job_group: Build Conda Packages
+      job_depends_on: Build Wheels - Tesseract 4.x
+    
+    - job_name: Build Wheels - Tesseract 5.x
+      job_group: Build Wheels
+      TESSERACT_COMMIT_ID: 5d5cd77 # Tesseract 5.0.1
+      
+    - job_name: Build Conda Packages - Tesseract 5.x
+      job_group: Build Conda Packages
+      job_depends_on: Build Wheels - Tesseract 5.x
 
 # don't build if only readme changed
 skip_commits:
@@ -23,7 +42,7 @@ matrix:
 for:
   - matrix:
       only:
-        - job_name: Build Wheels
+        - job_group: Build Wheels
 
     build_script:
       - pwsh: |
@@ -33,6 +52,8 @@ for:
           # copy files into newly pulled submodule
           Copy-Item -Path "res\setup.py" -Destination "tesserocr"
           Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
+
+          # ------ Build Leptonica ----------------------------------------
 
           # install and initialize vcpkg
           git clone https://github.com/Microsoft/vcpkg.git
@@ -47,10 +68,59 @@ for:
           Add-Content -Path .\triplets\x64-windows.cmake -Value 'set(VCPKG_BUILD_TYPE release)'
           Add-Content -Path .\triplets\x86-windows.cmake -Value 'set(VCPKG_BUILD_TYPE release)'
 
-          # build x64 and x86
-          .\vcpkg.exe install tesseract:x64-windows tesseract:x86-windows
+          # build Leptonica x64 and x86
+          .\vcpkg.exe install leptonica:x64-windows leptonica:x86-windows
 
-          cd ../tesserocr
+          cd ..
+
+          # ------ Build Tesseract ----------------------------------------
+
+          # prepare install directories
+          $tesseract_install_64 = Join-Path -Path $PWD -ChildPath "tesseract_install_64"
+          $tesseract_install_32 = Join-Path -Path $PWD -ChildPath "tesseract_install_32"
+          New-Item $tesseract_install_64 -ItemType Directory
+          New-Item $tesseract_install_32 -ItemType Directory
+
+          # clone and checkout Tesseract
+          git clone https://github.com/tesseract-ocr/tesseract.git
+          cd tesseract
+          git checkout $env:TESSERACT_COMMIT_ID
+
+          # store Tesseract version in env variable for setup.py
+          if (Test-Path ".\VERSION" -PathType Leaf) {
+            $env:TESSERACT_VERSION = Get-Content -Path .\VERSION -TotalCount 1
+          } elseif (Test-Path ".\api\baseapi.h" -PathType Leaf) {
+            # older version -> get version from ".\api\baseapi.h"
+            $content = Get-Content -Path ".\api\baseapi.h" -Raw
+            $match_found = $content -match 'TESSERACT_VERSION_STR "(.*)"'
+            $env:TESSERACT_VERSION = $Matches[1]
+          }
+
+          # apply patches if any
+          $patch_directory = "..\res\patches\$env:TESSERACT_COMMIT_ID"
+
+          if (Test-Path -Path $patch_directory) {
+            Get-ChildItem $patch_directory | 
+            Foreach-Object {
+                "applying $_"
+                git apply $_.FullName
+            }
+          } else {
+            "no patches found for Tesseract commit $env:TESSERACT_COMMIT_ID"
+          }
+
+          # build Tesseract x64 and x86
+          cmake -G "Visual Studio 17 2022" -A x64 -S . -B "build_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_64" -DCMAKE_PREFIX_PATH="$tesseract_install_64" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_PATH\scripts\buildsystems\vcpkg.cmake"
+          cmake -G "Visual Studio 17 2022" -A Win32 -S . -B "build_32" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_32" -DCMAKE_PREFIX_PATH="$tesseract_install_32" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_PATH\scripts\buildsystems\vcpkg.cmake"
+
+          cmake --build build_64 --config Release --target install
+          cmake --build build_32 --config Release --target install
+
+          cd ..
+
+          # ------ Build tesserocr ----------------------------------------
+
+          cd tesserocr
 
           # for each {64bit and 32bit} x {Python 3.6, 3.7, 3.8, 3.9, 3.10}
           ForEach ($platform_x64 in @($true, $false)) {
@@ -60,11 +130,11 @@ for:
                   # BUILD_PLATFORM and TESSERACT_VERSION are used in setup.py
                   if ($platform_x64) {
                       $env:BUILD_PLATFORM = "x64"
-                      $env:TESSERACT_VERSION = (Get-ChildItem -Path $env:VCPKG_PATH\installed\x64-windows\bin\*tesseract*.dll).VersionInfo.ProductVersion
+                      $env:TESSERACT_INSTALL_PATH = $tesseract_install_64
                       $env:Path = "C:\Python$py_ver-x64;" + $env:Path
                   } else {
                       $env:BUILD_PLATFORM = "x86"
-                      $env:TESSERACT_VERSION = (Get-ChildItem -Path $env:VCPKG_PATH\installed\x86-windows\bin\*tesseract*.dll).VersionInfo.ProductVersion
+                      $env:TESSERACT_INSTALL_PATH = $tesseract_install_32
                       $env:Path = "C:\Python$py_ver;" + $env:Path
                   }
                   
@@ -77,11 +147,12 @@ for:
           }
 
           # create archive for convenience
+          $env:TESSERACT_VERSION | Out-File -FilePath tesseract_version.txt
           $zip_name = "wheels_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
-          Compress-Archive -Path dist\*.whl -DestinationPath dist\$zip_name
+          Compress-Archive -Path dist\*.whl, tesseract_version.txt -DestinationPath dist\$zip_name
 
     test_script:
-      - pwsh: |
+      - pwsh: |      
           # test suite needs TESSDATA_PREFIX to point to a valid tessdata location 
           $env:TESSDATA_PREFIX = "$PWD\res\tessdata"
 
@@ -117,7 +188,7 @@ for:
 
   - matrix:
       only:
-        - job_name: Build Conda Packages
+        - job_group: Build Conda Packages
 
     build_script:
       - pwsh: |
@@ -125,9 +196,10 @@ for:
           New-Item conda_build -ItemType Directory
           New-Item tesserocr\dist -ItemType Directory
 
-          # call AppVeyor api to get job id of 'Build Wheels'
+          # call AppVeyor api to get the id of the 'Build Wheels' job corresponding to this job's Tesseract version
           $request = Invoke-WebRequest -Uri "https://ci.appveyor.com/api/projects/simonflueckiger/tesserocr-windows-build/build/$env:APPVEYOR_BUILD_VERSION" -Method:Get -ContentType "application/xml"
-          $job = ([xml]$request.Content).ProjectBuildResults.Build.Jobs.BuildJobModel | Where-Object Name -eq 'Build Wheels'
+          $job_suffix = ($env:APPVEYOR_JOB_NAME -split " ")[-1]
+          $job = ([xml]$request.Content).ProjectBuildResults.Build.Jobs.BuildJobModel | Where-Object Name -match "Build Wheels.*$job_suffix"
 
           # piece together the wheels zip artifact url from 'Build Wheels' job
           $url = "https://ci.appveyor.com/api/buildjobs/" + $job.JobId + "/artifacts/tesserocr%2Fdist%2Fwheels_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
@@ -143,6 +215,9 @@ for:
               $match_found = $wheel.Name -match 'tesserocr-\d+\.\d+\.\d+-cp(\d+).*(?:win(32)|amd(64)).*\.whl'
               $packages += @{ wheel = $wheel; py_ver = $Matches[1].Insert(1,'.'); py_ver_str = $Matches[1]; platform_x64 = if ($Matches[3] -eq "64") { $true } else { $false } }
           }
+          
+          # get Tesseract version from file
+          $env:TESSERACT_VERSION = Get-Content -Path tesserocr\dist\tesseract_version.txt -TotalCount 1
 
           ForEach ($platform_x64 in @($true, $false)) {
               
@@ -178,7 +253,7 @@ for:
                   # create unique folder and call "conda_setup_build_env.py" to generate meta.yaml and bld.bat for this specific package 
                   if ($platform_x64) { $conda_folder = "conda_py" + $py_ver_str + "_x64" } else { $conda_folder = "conda_py" + $py_ver_str + "_x86" }
                   New-Item $conda_folder -ItemType Directory
-                  python res\conda_setup_build_env.py "$PWD\tesserocr\dist\$package_name" 4.1.1 $conda_folder
+                  python res\conda_setup_build_env.py "$PWD\tesserocr\dist\$package_name" $env:TESSERACT_VERSION $conda_folder
                   
                   # finally invoke "conda build"
                   conda build $conda_folder --output-folder conda_build --python $py_ver --no-include-recipe --no-anaconda-upload --old-build-string

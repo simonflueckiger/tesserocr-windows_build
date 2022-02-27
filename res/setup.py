@@ -79,13 +79,16 @@ def version_to_int(version):
     return int(version_str, 16)
 
 
-def find_libraries(library_stems, search_path, extension):
+def find_libraries(library_stems, search_paths, extension):
     library_paths = []
 
     for library_stem in library_stems:
-        library_filename = [filename for filename in os.listdir(search_path) if re.search(r"^{}[-\.\d]+.*{}$".format(library_stem, extension), filename)]
-        assert len(library_filename) == 1, f"multiple libraries found in {search_path} which match \"{library_stem}\" stem"
-        library_paths.append(os.path.join(search_path, library_filename[0]))
+        library = []
+        for search_path in search_paths:
+            library.extend([{ "filename": filename, "base_path": search_path} for filename in os.listdir(search_path) if re.search(r"^{}[-\.\d]+.*{}$".format(library_stem, extension), filename)])
+        assert len(library) > 0, f"no libraries found in {search_paths} which match \"{library_stem}\" stem"
+        assert len(library) == 1, f"multiple libraries found in which match \"{library_stem}\" stem:\n{library}"
+        library_paths.append(os.path.join(library[0]["base_path"], library[0]["filename"]))
 
     return library_paths
 
@@ -93,8 +96,6 @@ def find_libraries(library_stems, search_path, extension):
 class my_build_ext(build_ext, object):
     def initialize_options(self):
         build_ext.initialize_options(self)
-
-        find_libraries(["tesseract"], vcpkg_bin, "dll")
 
         self.cython_compile_time_env = {
             'TESSERACT_VERSION': tesseract_version_int,
@@ -141,6 +142,7 @@ class ExtensionWithDLL(Extension):
 # get environment variables
 TESSERACT_VERSION = get_environment_variable('TESSERACT_VERSION')
 VCPKG_PATH = get_environment_variable('VCPKG_PATH')
+TESSERACT_INSTALL_PATH = get_environment_variable('TESSERACT_INSTALL_PATH')
 BUILD_PLATFORM = get_environment_variable('BUILD_PLATFORM')
 
 # parse tesseract version
@@ -148,9 +150,13 @@ tesseract_version_int = version_to_int(TESSERACT_VERSION)
 tesseract_version_major = major_version(TESSERACT_VERSION)
 _LOGGER.info(f"Tesseract version {TESSERACT_VERSION} converted to {tesseract_version_int} int representation")
 
-vcpkg_bin = Rf"{VCPKG_PATH}\installed\{BUILD_PLATFORM}-windows\bin"
-vcpkg_lib = Rf"{VCPKG_PATH}\installed\{BUILD_PLATFORM}-windows\lib"
-vcpkg_include = Rf"{VCPKG_PATH}\installed\{BUILD_PLATFORM}-windows\include"
+vcpkg_bin = os.path.join(VCPKG_PATH, Rf"installed\{BUILD_PLATFORM}-windows\bin")
+vcpkg_lib = os.path.join(VCPKG_PATH, Rf"installed\{BUILD_PLATFORM}-windows\lib")
+vcpkg_include = os.path.join(VCPKG_PATH, Rf"installed\{BUILD_PLATFORM}-windows\include")
+
+tesseract_bin = os.path.join(TESSERACT_INSTALL_PATH, "bin")
+tesseract_lib = os.path.join(TESSERACT_INSTALL_PATH, "lib")
+tesseract_include = os.path.join(TESSERACT_INSTALL_PATH, "include")
 
 build_dependencies = [
     "tesseract",
@@ -172,10 +178,10 @@ runtime_libraries = [
 ]
 
 
-runtime_library_paths = find_libraries(runtime_libraries, vcpkg_bin, "dll")
+runtime_library_paths = find_libraries(runtime_libraries, [vcpkg_bin, tesseract_bin], "dll")
 _LOGGER.info("runtime libraries found:\n\t{}".format("\n\t".join(runtime_library_paths)))
 
-build_dependency_paths = find_libraries(build_dependencies, vcpkg_lib, "lib")
+build_dependency_paths = find_libraries(build_dependencies, [vcpkg_lib, tesseract_lib], "lib")
 _LOGGER.info("build dependencies found:\n\t{}".format("\n\t".join(build_dependency_paths)))
 build_dependency_names = [os.path.splitext(os.path.basename(library_path))[0] for library_path in build_dependency_paths]
 
@@ -185,10 +191,10 @@ ext_modules = [
         sources=["tesserocr.pyx"],
         language='c++',
         include_dirs=[
-            vcpkg_include
+            vcpkg_include, tesseract_include
         ],
         library_dirs=[
-            vcpkg_lib
+            vcpkg_lib, tesseract_lib
         ],
         libraries=build_dependency_names,
         dlls=runtime_library_paths

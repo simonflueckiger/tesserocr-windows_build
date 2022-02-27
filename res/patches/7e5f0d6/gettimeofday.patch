@@ -1,0 +1,146 @@
+diff --git a/ccutil/ocrclass.h b/ccutil/ocrclass.h
+index cb83c6d6..7a1ce538 100644
+--- a/ccutil/ocrclass.h
++++ b/ccutil/ocrclass.h
+@@ -26,15 +26,8 @@
+ 
+ #ifndef            CCUTIL_OCRCLASS_H_
+ #define            CCUTIL_OCRCLASS_H_
+-
+-#ifndef __GNUC__
+-#ifdef _WIN32
+-#include          "gettimeofday.h"
+-#endif
+-#else
+-#include          <sys/time.h>
+-#endif
+ #include          <time.h>
++#include          <chrono>
+ #include          "host.h"
+ 
+ /*Maximum lengths of various strings*/
+@@ -125,7 +118,8 @@ class ETEXT_DESC {             // output header
+   CANCEL_FUNC cancel;               /// returns true to cancel
+   PROGRESS_FUNC progress_callback;  /// called whenever progress increases
+   void* cancel_this;                /// this or other data for cancel
+-  struct timeval end_time;          /// Time to stop. Expected to be set only
++  std::chrono::steady_clock::time_point  end_time;
++                                    /// Time to stop. Expected to be set only
+                                     /// by call to set_deadline_msecs().
+   EANYCODE_CHAR text[1];            /// character data
+ 
+@@ -138,29 +132,25 @@ class ETEXT_DESC {             // output header
+         cancel(NULL),
+         progress_callback(NULL),
+         cancel_this(NULL) {
+-    end_time.tv_sec = 0;
+-    end_time.tv_usec = 0;
++    end_time = std::chrono::time_point<std::chrono::steady_clock,
++                                       std::chrono::milliseconds>();
+   }
+ 
+   // Sets the end time to be deadline_msecs milliseconds from now.
+   void set_deadline_msecs(inT32 deadline_msecs) {
+-    gettimeofday(&end_time, NULL);
+-    inT32 deadline_secs = deadline_msecs / 1000;
+-    end_time.tv_sec += deadline_secs;
+-    end_time.tv_usec += (deadline_msecs -  deadline_secs * 1000) * 1000;
+-    if (end_time.tv_usec > 1000000) {
+-      end_time.tv_usec -= 1000000;
+-      ++end_time.tv_sec;
++    if (deadline_msecs > 0) {
++      end_time = std::chrono::steady_clock::now() +
++               std::chrono::milliseconds(deadline_msecs);
+     }
+   }
+ 
+   // Returns false if we've not passed the end_time, or have not set a deadline.
+   bool deadline_exceeded() const {
+-    if (end_time.tv_sec == 0 && end_time.tv_usec == 0) return false;
+-    struct timeval now;
+-    gettimeofday(&now, NULL);
+-    return (now.tv_sec > end_time.tv_sec || (now.tv_sec == end_time.tv_sec &&
+-                                             now.tv_usec > end_time.tv_usec));
++    if (end_time.time_since_epoch() ==
++        std::chrono::steady_clock::duration::zero())
++      return false;
++    auto now = std::chrono::steady_clock::now();
++    return (now > end_time);
+   }
+ };
+ 
+diff --git a/vs2010/port/gettimeofday.cpp b/vs2010/port/gettimeofday.cpp
+deleted file mode 100644
+index b7852453..00000000
+--- a/vs2010/port/gettimeofday.cpp
++++ /dev/null
+@@ -1,32 +0,0 @@
+-///////////////////////////////////////////////////////////////////////
+-// File:        gettimeofday.cpp
+-// Description: Implementation of gettimeofday based on leptonica
+-// Author:      tomp2010, zdenop
+-// Created:     Tue Feb 21 21:38:00 CET 2012
+-//
+-// (C) Copyright 2012, Google Inc.
+-// Licensed under the Apache License, Version 2.0 (the "License");
+-// you may not use this file except in compliance with the License.
+-// You may obtain a copy of the License at
+-// http://www.apache.org/licenses/LICENSE-2.0
+-// Unless required by applicable law or agreed to in writing, software
+-// distributed under the License is distributed on an "AS IS" BASIS,
+-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-// See the License for the specific language governing permissions and
+-// limitations under the License.
+-//
+-///////////////////////////////////////////////////////////////////////
+-
+-#include <allheaders.h>
+-#include "gettimeofday.h"
+-
+-int gettimeofday(struct timeval *tp, struct timezone *tzp) {
+-  l_int32 sec, usec;
+-  if (tp == NULL)
+-    return -1;
+-
+-  l_getCurrentTime(&sec, &usec);
+-  tp->tv_sec = sec;
+-  tp->tv_usec = usec;
+-  return 0;
+-}
+diff --git a/vs2010/port/gettimeofday.h b/vs2010/port/gettimeofday.h
+deleted file mode 100644
+index c34215b1..00000000
+--- a/vs2010/port/gettimeofday.h
++++ /dev/null
+@@ -1,31 +0,0 @@
+-///////////////////////////////////////////////////////////////////////
+-// File:        gettimeofday.h
+-// Description: Header file for gettimeofday.cpp
+-// Author:      tomp2010, zdenop
+-// Created:     Tue Feb 21 21:38:00 CET 2012
+-//
+-// (C) Copyright 2012, Google Inc.
+-// Licensed under the Apache License, Version 2.0 (the "License");
+-// you may not use this file except in compliance with the License.
+-// You may obtain a copy of the License at
+-// http://www.apache.org/licenses/LICENSE-2.0
+-// Unless required by applicable law or agreed to in writing, software
+-// distributed under the License is distributed on an "AS IS" BASIS,
+-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-// See the License for the specific language governing permissions and
+-// limitations under the License.
+-//
+-///////////////////////////////////////////////////////////////////////
+-
+-#ifndef VS2008_PORT_GETTIMEOFDAY_H_
+-#define VS2008_PORT_GETTIMEOFDAY_H_
+-
+-#ifdef _WIN32
+-#include          <winsock.h>    // timeval is defined in here.
+-#endif
+-
+-typedef struct  timezone tz; 
+-
+-int gettimeofday(struct timeval * tp, struct timezone * tzp);
+-
+-#endif  // VS2008_PORT_GETTIMEOFDAY_H_
