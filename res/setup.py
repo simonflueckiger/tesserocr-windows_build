@@ -172,7 +172,7 @@ runtime_libraries = [
             "libpng",
             "zlib",
             "tiff",
-                "lzma",
+                "liblzma",
             "libwebpmux",
             "webp"
 ]
