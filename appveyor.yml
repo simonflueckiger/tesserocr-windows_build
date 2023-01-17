@@ -46,6 +46,8 @@ for:
 
     build_script:
       - pwsh: |
+          iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+      
           # pull tesserocr submodule
           git submodule update --init --recursive
 
@@ -150,6 +152,8 @@ for:
           $env:TESSERACT_VERSION | Out-File -FilePath tesseract_version.txt
           $zip_name = "wheels_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
           Compress-Archive -Path dist\*.whl, tesseract_version.txt -DestinationPath dist\$zip_name
+          
+          $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
     test_script:
       - pwsh: |      
