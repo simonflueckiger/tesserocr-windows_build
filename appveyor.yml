@@ -54,6 +54,23 @@ for:
           # copy files into newly pulled submodule
           Copy-Item -Path "res\setup.py" -Destination "tesserocr"
           Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
+          
+          # apply patches if any
+          cd tesserocr
+          
+          $patch_directory = "..\res\patches\tesserocr"
+
+          if (Test-Path -Path $patch_directory) {
+            Get-ChildItem $patch_directory | 
+            Foreach-Object {
+                "applying $_"
+                git apply $_.FullName
+            }
+          } else {
+            "no patches found for tesserocr"
+          }
+          
+          cd ..
 
           # ------ Build Leptonica ----------------------------------------
 
@@ -98,8 +115,8 @@ for:
             $env:TESSERACT_VERSION = $Matches[1]
           }
 
-          # apply patches if any
-          $patch_directory = "..\res\patches\$env:TESSERACT_COMMIT_ID"
+          # apply patches if any (not needed anymore since switch to CMake)
+          $patch_directory = "..\res\patches\tesseract\$env:TESSERACT_COMMIT_ID"
 
           if (Test-Path -Path $patch_directory) {
             Get-ChildItem $patch_directory | 
