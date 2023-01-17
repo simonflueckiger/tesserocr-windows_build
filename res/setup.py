@@ -169,6 +169,7 @@ runtime_libraries = [
         "leptonica",
             "gif",
             "jpeg",
+            "openjp2",
             "png",
             "zlib",
             "tiff",
