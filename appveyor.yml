@@ -248,9 +248,9 @@ for:
               # this is necessary for creating and activating new environments
               # any Miniconda version installed on AppVeyor could be used as long as we update it
               if ($platform_x64) { 
-                  (& "C:\Miniconda38-x64\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
+                  (& "C:\Miniconda37-x64\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
               } else { 
-                  (& "C:\Miniconda38\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
+                  (& "C:\Miniconda37\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
               }
               
               # we want the latest conda to build for the most recent python version 
