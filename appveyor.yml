@@ -4,31 +4,32 @@ image: Visual Studio 2022
 environment:
   # https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json
   VCPKG_COMMIT_ID: 1e9facc # Leptonica 1.82.0
+  PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311
 
   matrix:
-    #- job_name: Build Wheels - Tesseract 3.x
-    #  job_group: Build Wheels
-    #  TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
+    - job_name: Build Wheels - Tesseract 3.x
+      job_group: Build Wheels
+      TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
       
-    #- job_name: Build Conda Packages - Tesseract 3.x
-    #  job_group: Build Conda Packages
-    #  job_depends_on: Build Wheels - Tesseract 3.x
+    - job_name: Build Conda Packages - Tesseract 3.x
+      job_group: Build Conda Packages
+      job_depends_on: Build Wheels - Tesseract 3.x
 
-    #- job_name: Build Wheels - Tesseract 4.x
-    #  job_group: Build Wheels
-    #  TESSERACT_COMMIT_ID: f38e7a7 # Tesseract 4.1.3
+    - job_name: Build Wheels - Tesseract 4.x
+      job_group: Build Wheels
+      TESSERACT_COMMIT_ID: f38e7a7 # Tesseract 4.1.3
 
-    #- job_name: Build Conda Packages - Tesseract 4.x
-    #  job_group: Build Conda Packages
-    #  job_depends_on: Build Wheels - Tesseract 4.x
+    - job_name: Build Conda Packages - Tesseract 4.x
+      job_group: Build Conda Packages
+      job_depends_on: Build Wheels - Tesseract 4.x
     
     - job_name: Build Wheels - Tesseract 5.x
       job_group: Build Wheels
       TESSERACT_COMMIT_ID: 080da83 # Tesseract 5.3.0
       
-    #- job_name: Build Conda Packages - Tesseract 5.x
-    #  job_group: Build Conda Packages
-    #  job_depends_on: Build Wheels - Tesseract 5.x
+    - job_name: Build Conda Packages - Tesseract 5.x
+      job_group: Build Conda Packages
+      job_depends_on: Build Wheels - Tesseract 5.x
 
 # don't build if only readme changed
 skip_commits:
@@ -46,7 +47,12 @@ for:
 
     build_script:
       - pwsh: |
-          #iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+      
+          $env:PYTHON_VERSIONS
+          
+          ForEach ($py_ver in $env:PYTHON_VERSIONS -split ", ") {
+            "py_ver: ""$py_ver"""
+          }
       
           # pull tesserocr submodule
           git submodule update --init --recursive
@@ -55,19 +61,21 @@ for:
           Copy-Item -Path "res\setup.py" -Destination "tesserocr"
           Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
           
-          # apply patches if any
+          # apply tesserocr patches
           cd tesserocr
           
           $patch_directory = "..\res\patches\tesserocr"
 
-          if (Test-Path -Path $patch_directory) {
-            Get-ChildItem $patch_directory | 
-            Foreach-Object {
-                "applying $_"
-                git apply $_.FullName
-            }
-          } else {
-            "no patches found for tesserocr"
+          $patch_files = @(
+              # addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
+              "disable_lstm_choices_test.patch"
+          )
+
+          Foreach ($patch_file in $patch_files)
+          {
+              $full_path = Join-Path -Path $patch_directory -ChildPath $patch_file
+              "applying ""$full_path"""
+              git apply "$full_path"
           }
           
           cd ..
@@ -169,8 +177,6 @@ for:
           $env:TESSERACT_VERSION | Out-File -FilePath tesseract_version.txt
           $zip_name = "wheels_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
           Compress-Archive -Path dist\*.whl, tesseract_version.txt -DestinationPath dist\$zip_name
-          
-          #$blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
     test_script:
       - pwsh: |      
