@@ -176,9 +176,9 @@ for:
           # test suite needs TESSDATA_PREFIX to point to a valid tessdata location 
           $env:TESSDATA_PREFIX = "$PWD\res\tessdata"
 
-          # for each {64bit and 32bit} x {Python 3.6, 3.7, 3.8, 3.9, 3.10}
+          # for each {64bit and 32bit} x {Python Versions}
           ForEach ($platform_x64 in @($true, $false)) {
-              ForEach ($py_ver in @("36", "37", "38", "39", "310")) {
+              ForEach ($py_ver in $env:PYTHON_VERSIONS -split ", ") {
                   
                   # set platform/python-version specific variables
                   if ($platform_x64) {
