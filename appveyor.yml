@@ -1,9 +1,12 @@
-version: 1.0.{build}
+version: 2.5.2.{build}
 image: Visual Studio 2022
 
 environment:
   # https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json
-  VCPKG_COMMIT_ID: 821d0d2 # Leptonica 1.82.0
+  VCPKG_COMMIT_ID: 1e9facc # Leptonica 1.82.0
+  PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311
+  # 2023-01-18 conda-build currently not supported for python 3.11 https://github.com/conda/conda/issues/11170
+  CONDA_SKIP_PYTHON_VERSIONS: 311
 
   matrix:
     - job_name: Build Wheels - Tesseract 3.x
@@ -45,13 +48,32 @@ for:
         - job_group: Build Wheels
 
     build_script:
-      - pwsh: |
+      - pwsh: |      
           # pull tesserocr submodule
           git submodule update --init --recursive
 
           # copy files into newly pulled submodule
           Copy-Item -Path "res\setup.py" -Destination "tesserocr"
           Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
+          
+          # apply tesserocr patches
+          cd tesserocr
+          
+          $patch_directory = "..\res\patches\tesserocr"
+
+          $patch_files = @(
+              # addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
+              "disable_lstm_choices_test.patch"
+          )
+
+          Foreach ($patch_file in $patch_files)
+          {
+              $full_path = Join-Path -Path $patch_directory -ChildPath $patch_file
+              "applying ""$full_path"""
+              git apply "$full_path"
+          }
+          
+          cd ..
 
           # ------ Build Leptonica ----------------------------------------
 
@@ -96,8 +118,8 @@ for:
             $env:TESSERACT_VERSION = $Matches[1]
           }
 
-          # apply patches if any
-          $patch_directory = "..\res\patches\$env:TESSERACT_COMMIT_ID"
+          # apply patches if any (not needed anymore since switch to CMake)
+          $patch_directory = "..\res\patches\tesseract\$env:TESSERACT_COMMIT_ID"
 
           if (Test-Path -Path $patch_directory) {
             Get-ChildItem $patch_directory | 
@@ -122,9 +144,9 @@ for:
 
           cd tesserocr
 
-          # for each {64bit and 32bit} x {Python 3.6, 3.7, 3.8, 3.9, 3.10}
+          # for each {64bit and 32bit} x {Python Versions}
           ForEach ($platform_x64 in @($true, $false)) {
-              ForEach ($py_ver in @("36", "37", "38", "39", "310")) {
+              ForEach ($py_ver in $env:PYTHON_VERSIONS -split ", ") {
                   
                   # set platform/python-version specific variables
                   # BUILD_PLATFORM and TESSERACT_VERSION are used in setup.py
@@ -156,9 +178,9 @@ for:
           # test suite needs TESSDATA_PREFIX to point to a valid tessdata location 
           $env:TESSDATA_PREFIX = "$PWD\res\tessdata"
 
-          # for each {64bit and 32bit} x {Python 3.6, 3.7, 3.8, 3.9, 3.10}
+          # for each {64bit and 32bit} x {Python Versions}
           ForEach ($platform_x64 in @($true, $false)) {
-              ForEach ($py_ver in @("36", "37", "38", "39", "310")) {
+              ForEach ($py_ver in $env:PYTHON_VERSIONS -split ", ") {
                   
                   # set platform/python-version specific variables
                   if ($platform_x64) {
@@ -192,6 +214,8 @@ for:
 
     build_script:
       - pwsh: |
+          $conda_skip_python_versions = $env:CONDA_SKIP_PYTHON_VERSIONS -split ", "
+          
           # create necessary directories
           New-Item conda_build -ItemType Directory
           New-Item tesserocr\dist -ItemType Directory
@@ -220,7 +244,6 @@ for:
           $env:TESSERACT_VERSION = Get-Content -Path tesserocr\dist\tesseract_version.txt -TotalCount 1
 
           ForEach ($platform_x64 in @($true, $false)) {
-              
               # properly activates conda env for powershell w/o "conda init powershell" being called beforehand
               # (which would require closing and re-opening of powershell session)
               # this is necessary for creating and activating new environments
@@ -236,6 +259,8 @@ for:
               conda update -y -n base -c defaults conda
 
               ForEach ($package in $packages) {
+                  if ($conda_skip_python_versions.Contains($package.py_ver_str)) { Continue }
+              
                   # first do all x64 then all x86 packages
                   if ($package.platform_x64 -ne $platform_x64) { Continue }
                   

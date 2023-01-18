@@ -85,7 +85,7 @@ def find_libraries(library_stems, search_paths, extension):
     for library_stem in library_stems:
         library = []
         for search_path in search_paths:
-            library.extend([{ "filename": filename, "base_path": search_path} for filename in os.listdir(search_path) if re.search(r"^{}[-\.\d]+.*{}$".format(library_stem, extension), filename)])
+            library.extend([{ "filename": filename, "base_path": search_path} for filename in os.listdir(search_path) if re.search(r"^(?:lib)?{}(?:-(?:\d+\.)*|\d+\.|\.){}$".format(library_stem, extension), filename)])
         assert len(library) > 0, f"no libraries found in {search_paths} which match \"{library_stem}\" stem"
         assert len(library) == 1, f"multiple libraries found in which match \"{library_stem}\" stem:\n{library}"
         library_paths.append(os.path.join(library[0]["base_path"], library[0]["filename"]))
@@ -169,11 +169,12 @@ runtime_libraries = [
         "leptonica",
             "gif",
             "jpeg",
-            "libpng",
+            "openjp2",
+            "png",
             "zlib",
             "tiff",
                 "lzma",
-            "libwebpmux",
+            "webpmux",
             "webp"
 ]
 
