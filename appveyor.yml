@@ -212,6 +212,8 @@ for:
 
     build_script:
       - pwsh: |
+          iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+          
           # create necessary directories
           New-Item conda_build -ItemType Directory
           New-Item tesserocr\dist -ItemType Directory
@@ -292,6 +294,8 @@ for:
           Copy-Item -Path conda_build\win-32\tesserocr*.tar.bz2 -Destination conda_packages\win-32
 
           Compress-Archive -Path conda_packages/* -DestinationPath conda_packages.zip
+          
+          $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
     artifacts:
       - path: conda_build\win-*\tesserocr*.tar.bz2
