@@ -46,14 +46,7 @@ for:
         - job_group: Build Wheels
 
     build_script:
-      - pwsh: |
-      
-          $env:PYTHON_VERSIONS
-          
-          ForEach ($py_ver in $env:PYTHON_VERSIONS -split ", ") {
-            "py_ver: ""$py_ver"""
-          }
-      
+      - pwsh: |      
           # pull tesserocr submodule
           git submodule update --init --recursive
 
@@ -149,9 +142,9 @@ for:
 
           cd tesserocr
 
-          # for each {64bit and 32bit} x {Python 3.6, 3.7, 3.8, 3.9, 3.10}
+          # for each {64bit and 32bit} x {Python Versions}
           ForEach ($platform_x64 in @($true, $false)) {
-              ForEach ($py_ver in @("36", "37", "38", "39", "310")) {
+              ForEach ($py_ver in $env:PYTHON_VERSIONS -split ", ") {
                   
                   # set platform/python-version specific variables
                   # BUILD_PLATFORM and TESSERACT_VERSION are used in setup.py
