@@ -5,6 +5,8 @@ environment:
   # https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json
   VCPKG_COMMIT_ID: 1e9facc # Leptonica 1.82.0
   PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311
+  # 2023-01-18 conda-build currently not supported for python 3.11 https://github.com/conda/conda/issues/11170
+  CONDA_SKIP_PYTHON_VERSIONS: 311
 
   matrix:
     - job_name: Build Wheels - Tesseract 3.x
@@ -47,7 +49,7 @@ for:
 
     build_script:
       - pwsh: |      
-          iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+          #iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
           
           # pull tesserocr submodule
           git submodule update --init --recursive
@@ -173,7 +175,7 @@ for:
           $zip_name = "wheels_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
           Compress-Archive -Path dist\*.whl, tesseract_version.txt -DestinationPath dist\$zip_name
           
-          $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+          #$blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
     test_script:
       - pwsh: |      
@@ -216,7 +218,8 @@ for:
 
     build_script:
       - pwsh: |
-          iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+          #iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+          $conda_skip_python_versions = $env:CONDA_SKIP_PYTHON_VERSIONS -split ", "
           
           # create necessary directories
           New-Item conda_build -ItemType Directory
@@ -246,7 +249,6 @@ for:
           $env:TESSERACT_VERSION = Get-Content -Path tesserocr\dist\tesseract_version.txt -TotalCount 1
 
           ForEach ($platform_x64 in @($true, $false)) {
-              
               # properly activates conda env for powershell w/o "conda init powershell" being called beforehand
               # (which would require closing and re-opening of powershell session)
               # this is necessary for creating and activating new environments
@@ -262,6 +264,8 @@ for:
               conda update -y -n base -c defaults conda
 
               ForEach ($package in $packages) {
+                  if ($conda_skip_python_versions.Contains($package.py_ver_str)) { Continue }
+              
                   # first do all x64 then all x86 packages
                   if ($package.platform_x64 -ne $platform_x64) { Continue }
                   
@@ -299,7 +303,7 @@ for:
 
           Compress-Archive -Path conda_packages/* -DestinationPath conda_packages.zip
           
-          $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+          #$blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
     artifacts:
       - path: conda_build\win-*\tesserocr*.tar.bz2
