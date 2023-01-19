@@ -203,13 +203,13 @@ ext_modules = [
 ]
 
 setup(
-    name='tesserocr',
+    name='tesserocr-windows_build',
     version=find_version('tesserocr.pyx'),
     description='A simple, Pillow-friendly, Python wrapper around '
                 'tesseract-ocr API using Cython',
     long_description=read('README.rst'),
     long_description_content_type='text/x-rst',
-    url='https://github.com/sirfz/tesserocr',
+    url='https://github.com/simonflueckiger/tesserocr-windows_build',
     author='Fayez Zouheiry',
     author_email='iamfayez@gmail.com',
     license='MIT',
@@ -221,14 +221,12 @@ setup(
         'Topic :: Scientific/Engineering :: Image Recognition',
         'License :: OSI Approved :: MIT License',
         'Operating System :: POSIX',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Cython',
