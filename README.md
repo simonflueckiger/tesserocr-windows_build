@@ -28,4 +28,4 @@ PyTessBaseAPI(path='C:\path\to\tessdata')
 Check out [tesserocr#tessdata](https://github.com/sirfz/tesserocr#tessdata) for more information.
 
 ## Python Versions
-As a short disclaimer: I will only build packages targeting Python versions which are still actively supported (have not yet reached [EOL](https://endoflife.date/python) status). **This means I can't follow up on request for Python versions 2.x or anything <= 3.6.**
+As a short disclaimer: I will only build packages targeting Python versions which are still actively supported (have not yet reached [EOL](https://endoflife.date/python) status). **This means I can't follow up on requests for Python versions 2.x or anything <= 3.6.**
