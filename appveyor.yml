@@ -2,36 +2,37 @@ version: 2.6.0.{build}
 image: Visual Studio 2022
 
 environment:
-  # https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json
-  VCPKG_COMMIT_ID: ddea2bb # Leptonica 1.83.1
   PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311
   # 2023-01-18 conda-build currently not supported for python 3.11 https://github.com/conda/conda/issues/11170
-  CONDA_SKIP_PYTHON_VERSIONS: 311
+  # CONDA_SKIP_PYTHON_VERSIONS: 311
 
   matrix:
-    - job_name: Build Wheels - Tesseract 5.x
-      job_group: Build Wheels
-      TESSERACT_COMMIT_ID: 71af454 # Tesseract 5.3.1
-
-    - job_name: Build Conda Packages - Tesseract 5.x
-      job_group: Build Conda Packages
-      job_depends_on: Build Wheels - Tesseract 5.x
-
     - job_name: Build Wheels - Tesseract 3.x
       job_group: Build Wheels
+      VCPKG_COMMIT_ID: 1e9facc # Leptonica 1.82.0 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
       TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
-
+      
     - job_name: Build Conda Packages - Tesseract 3.x
       job_group: Build Conda Packages
       job_depends_on: Build Wheels - Tesseract 3.x
 
     - job_name: Build Wheels - Tesseract 4.x
       job_group: Build Wheels
+      VCPKG_COMMIT_ID: 1e9facc # Leptonica 1.82.0 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
       TESSERACT_COMMIT_ID: f38e7a7 # Tesseract 4.1.3
 
     - job_name: Build Conda Packages - Tesseract 4.x
       job_group: Build Conda Packages
       job_depends_on: Build Wheels - Tesseract 4.x
+    
+    - job_name: Build Wheels - Tesseract 5.x
+      job_group: Build Wheels
+      VCPKG_COMMIT_ID: ddea2bb # Leptonica 1.83.1 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
+      TESSERACT_COMMIT_ID: 71af454 # Tesseract 5.3.1
+      
+    - job_name: Build Conda Packages - Tesseract 5.x
+      job_group: Build Conda Packages
+      job_depends_on: Build Wheels - Tesseract 5.x
 
 # don't build if only readme changed
 skip_commits:
