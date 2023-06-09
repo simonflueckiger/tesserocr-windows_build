@@ -63,7 +63,10 @@ for:
 
           $patch_files = @(
               # addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
-              "disable_lstm_choices_test.patch"
+              "disable_lstm_choices_test.patch",
+              
+              # temporary fix for https://github.com/sirfz/tesserocr/issues/314
+              "access_hidden_leptonica_structs.patch"
           )
 
           Foreach ($patch_file in $patch_files)
