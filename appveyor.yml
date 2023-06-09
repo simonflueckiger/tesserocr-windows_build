@@ -3,7 +3,7 @@ image: Visual Studio 2022
 
 environment:
   # https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json
-  VCPKG_COMMIT_ID: b667978 # Leptonica 1.83.1
+  VCPKG_COMMIT_ID: ddea2bb # Leptonica 1.83.1
   PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311
   # 2023-01-18 conda-build currently not supported for python 3.11 https://github.com/conda/conda/issues/11170
   CONDA_SKIP_PYTHON_VERSIONS: 311
