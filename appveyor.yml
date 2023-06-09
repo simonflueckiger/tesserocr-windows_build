@@ -9,10 +9,18 @@ environment:
   CONDA_SKIP_PYTHON_VERSIONS: 311
 
   matrix:
+    - job_name: Build Wheels - Tesseract 5.x
+      job_group: Build Wheels
+      TESSERACT_COMMIT_ID: 71af454 # Tesseract 5.3.1
+
+    - job_name: Build Conda Packages - Tesseract 5.x
+      job_group: Build Conda Packages
+      job_depends_on: Build Wheels - Tesseract 5.x
+
     - job_name: Build Wheels - Tesseract 3.x
       job_group: Build Wheels
       TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
-      
+
     - job_name: Build Conda Packages - Tesseract 3.x
       job_group: Build Conda Packages
       job_depends_on: Build Wheels - Tesseract 3.x
@@ -24,14 +32,6 @@ environment:
     - job_name: Build Conda Packages - Tesseract 4.x
       job_group: Build Conda Packages
       job_depends_on: Build Wheels - Tesseract 4.x
-    
-    - job_name: Build Wheels - Tesseract 5.x
-      job_group: Build Wheels
-      TESSERACT_COMMIT_ID: 71af454 # Tesseract 5.3.1
-      
-    - job_name: Build Conda Packages - Tesseract 5.x
-      job_group: Build Conda Packages
-      job_depends_on: Build Wheels - Tesseract 5.x
 
 # don't build if only readme changed
 skip_commits:
