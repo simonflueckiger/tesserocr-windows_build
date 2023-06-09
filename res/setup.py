@@ -229,13 +229,14 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Cython',
     ],
     keywords='Tesseract,tesseract-ocr,OCR,optical character recognition,'
              'PIL,Pillow,Cython',
-
     cmdclass={'build_ext': my_build_ext},
     ext_modules=ext_modules,
     packages=['tesserocr'],
