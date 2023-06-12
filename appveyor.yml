@@ -215,7 +215,7 @@ for:
 
     build_script:
       - pwsh: |
-          iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+          #iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
       
           $conda_skip_python_versions = $env:CONDA_SKIP_PYTHON_VERSIONS -split ", "
           
@@ -303,8 +303,8 @@ for:
 
           Compress-Archive -Path conda_packages/* -DestinationPath conda_packages.zip
 
-    on_finish:
-      - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+    #on_finish:
+    #  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
     artifacts:
       - path: conda_build\win-*\tesserocr*.tar.bz2
