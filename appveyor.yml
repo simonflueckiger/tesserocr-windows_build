@@ -7,14 +7,14 @@ environment:
   # CONDA_SKIP_PYTHON_VERSIONS: 311
 
   matrix:
-    - job_name: Build Conda Packages - Tesseract 3.x
-      job_group: Build Conda Packages
-      job_depends_on: Build Wheels - Tesseract 3.x
-  
     - job_name: Build Wheels - Tesseract 3.x
       job_group: Build Wheels
       VCPKG_COMMIT_ID: 1e9facc # Leptonica 1.82.0 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
       TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
+
+    - job_name: Build Conda Packages - Tesseract 3.x
+      job_group: Build Conda Packages
+      job_depends_on: Build Wheels - Tesseract 3.x
       
     - job_name: Build Wheels - Tesseract 4.x
       job_group: Build Wheels
@@ -252,14 +252,16 @@ for:
               # this is necessary for creating and activating new environments
               # any Miniconda version installed on AppVeyor could be used as long as we update it
               if ($platform_x64) { 
-                  (& "C:\Miniconda37-x64\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
+                  (& "C:\Miniconda38-x64\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
               } else { 
-                  (& "C:\Miniconda37\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
+                  (& "C:\Miniconda38\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
               }
               
               # we want the latest conda to build for the most recent python version 
               # (since more recent Miniconda versions like Miniconda310 are not yet installed on this AppVeyor image)
-              conda update -y -n base -c defaults conda
+              # conda version >= 23.5.0 is required (only works with miniconda >= 3.8) for conda-build on python 3.11,
+              # using "conda update -y -n base -c defaults conda" doesn't work if installed version too far behind
+              conda install -n base -c defaults conda=23.5.0
 
               ForEach ($package in $packages) {
                   if ($conda_skip_python_versions.Contains($package.py_ver_str)) { Continue }
