@@ -8,6 +8,11 @@ environment:
   CONDA_SKIP_PYTHON_VERSIONS_32: 311
 
   matrix:
+    - job_name: Build Wheels - Tesseract 5.x
+      job_group: Build Wheels
+      VCPKG_COMMIT_ID: ddea2bb # Leptonica 1.83.1 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
+      TESSERACT_COMMIT_ID: 71af454 # Tesseract 5.3.1
+  
     - job_name: Build Wheels - Tesseract 3.x
       job_group: Build Wheels
       VCPKG_COMMIT_ID: 1e9facc # Leptonica 1.82.0 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
@@ -26,10 +31,7 @@ environment:
       job_group: Build Conda Packages
       job_depends_on: Build Wheels - Tesseract 4.x
     
-    - job_name: Build Wheels - Tesseract 5.x
-      job_group: Build Wheels
-      VCPKG_COMMIT_ID: ddea2bb # Leptonica 1.83.1 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
-      TESSERACT_COMMIT_ID: 71af454 # Tesseract 5.3.1
+    
       
     - job_name: Build Conda Packages - Tesseract 5.x
       job_group: Build Conda Packages
@@ -164,6 +166,8 @@ for:
                   
                   # install requirements
                   python -m pip install --no-warn-script-location --no-input -r requirements-dev.txt
+                  
+                  $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
                   
                   # build wheel
                   python setup.py bdist_wheel
