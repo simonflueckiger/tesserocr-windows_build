@@ -7,15 +7,15 @@ environment:
   # CONDA_SKIP_PYTHON_VERSIONS: 311
 
   matrix:
+    - job_name: Build Conda Packages - Tesseract 3.x
+      job_group: Build Conda Packages
+      job_depends_on: Build Wheels - Tesseract 3.x
+  
     - job_name: Build Wheels - Tesseract 3.x
       job_group: Build Wheels
       VCPKG_COMMIT_ID: 1e9facc # Leptonica 1.82.0 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
       TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
       
-    - job_name: Build Conda Packages - Tesseract 3.x
-      job_group: Build Conda Packages
-      job_depends_on: Build Wheels - Tesseract 3.x
-
     - job_name: Build Wheels - Tesseract 4.x
       job_group: Build Wheels
       VCPKG_COMMIT_ID: 1e9facc # Leptonica 1.82.0 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
@@ -215,6 +215,8 @@ for:
 
     build_script:
       - pwsh: |
+          iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+      
           $conda_skip_python_versions = $env:CONDA_SKIP_PYTHON_VERSIONS -split ", "
           
           # create necessary directories
@@ -298,6 +300,9 @@ for:
           Copy-Item -Path conda_build\win-32\tesserocr*.tar.bz2 -Destination conda_packages\win-32
 
           Compress-Archive -Path conda_packages/* -DestinationPath conda_packages.zip
+
+    on_finish:
+      - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
     artifacts:
       - path: conda_build\win-*\tesserocr*.tar.bz2
