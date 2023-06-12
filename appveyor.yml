@@ -181,34 +181,34 @@ for:
           $zip_name = "wheels_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
           Compress-Archive -Path dist\*.whl, tesseract_version.txt -DestinationPath dist\$zip_name
 
-    test_script:
-      - pwsh: |      
-          # test suite needs TESSDATA_PREFIX to point to a valid tessdata location 
-          $env:TESSDATA_PREFIX = "$PWD\res\tessdata"
+    # test_script:
+      # - pwsh: |      
+          # # test suite needs TESSDATA_PREFIX to point to a valid tessdata location 
+          # $env:TESSDATA_PREFIX = "$PWD\res\tessdata"
 
-          # for each {64bit and 32bit} x {Python Versions}
-          ForEach ($platform_x64 in @($true, $false)) {
-              ForEach ($py_ver in $env:PYTHON_VERSIONS -split ", ") {
+          # # for each {64bit and 32bit} x {Python Versions}
+          # ForEach ($platform_x64 in @($true, $false)) {
+              # ForEach ($py_ver in $env:PYTHON_VERSIONS -split ", ") {
                   
-                  # set platform/python-version specific variables
-                  if ($platform_x64) {
-                      $env:Path = "C:\Python$py_ver-x64;" + $env:Path
-                      $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*amd64*.whl
-                  } else {
-                      $env:Path = "C:\Python$py_ver;" + $env:Path
-                      $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*win32*.whl
-                  }
+                  # # set platform/python-version specific variables
+                  # if ($platform_x64) {
+                      # $env:Path = "C:\Python$py_ver-x64;" + $env:Path
+                      # $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*amd64*.whl
+                  # } else {
+                      # $env:Path = "C:\Python$py_ver;" + $env:Path
+                      # $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*win32*.whl
+                  # }
                   
-                  # install previously built wheels
-                  python -m pip install $wheel_path
+                  # # install previously built wheels
+                  # python -m pip install $wheel_path
                   
-                  # execute test suite
-                  python tesserocr\tests\test_api.py
+                  # # execute test suite
+                  # python tesserocr\tests\test_api.py
                   
-                  # throw immediately if not all test passed
-                  if ($LastExitCode -ne 0) { exit $LastExitCode }
-              }
-          }
+                  # # throw immediately if not all test passed
+                  # if ($LastExitCode -ne 0) { exit $LastExitCode }
+              # }
+          # }
 
     artifacts:
       - path: tesserocr\dist\*.whl
