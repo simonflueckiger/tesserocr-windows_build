@@ -4,7 +4,7 @@ image: Visual Studio 2022
 environment:
   PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311
   # 2023-01-18 conda-build currently not supported for python 3.11 https://github.com/conda/conda/issues/11170
-  CONDA_SKIP_PYTHON_VERSIONS_64: 311
+  #CONDA_SKIP_PYTHON_VERSIONS_64: 311
   CONDA_SKIP_PYTHON_VERSIONS_32: 311
 
   matrix:
@@ -146,11 +146,14 @@ for:
 
           cd ..
 
-          $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+          # $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
           # ------ Build tesserocr ----------------------------------------
 
           cd tesserocr
+          
+          # dumpbin.exe required for finding dependencies
+          $env:Path = "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin;" + $env:Path
 
           # for each {64bit and 32bit} x {Python Versions}
           ForEach ($platform_x64 in @($true, $false)) {
