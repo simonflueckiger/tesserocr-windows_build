@@ -4,7 +4,7 @@ image: Visual Studio 2022
 environment:
   PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311
   # 2023-01-18 conda-build currently not supported for python 3.11 https://github.com/conda/conda/issues/11170
-  # CONDA_SKIP_PYTHON_VERSIONS_64: 311
+  CONDA_SKIP_PYTHON_VERSIONS_64: 311
   CONDA_SKIP_PYTHON_VERSIONS_32: 311
 
   matrix:
@@ -12,6 +12,10 @@ environment:
       job_group: Build Wheels
       VCPKG_COMMIT_ID: ddea2bb # Leptonica 1.83.1 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
       TESSERACT_COMMIT_ID: 71af454 # Tesseract 5.3.1
+      
+    - job_name: Build Conda Packages - Tesseract 5.x
+      job_group: Build Conda Packages
+      job_depends_on: Build Wheels - Tesseract 5.x
   
     - job_name: Build Wheels - Tesseract 3.x
       job_group: Build Wheels
@@ -33,9 +37,7 @@ environment:
     
     
       
-    - job_name: Build Conda Packages - Tesseract 5.x
-      job_group: Build Conda Packages
-      job_depends_on: Build Wheels - Tesseract 5.x
+    
 
 # don't build if only readme changed
 skip_commits:
@@ -167,7 +169,7 @@ for:
                   # install requirements
                   python -m pip install --no-warn-script-location --no-input -r requirements-dev.txt
                   
-                  $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+                  #$blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
                   
                   # build wheel
                   python setup.py bdist_wheel
