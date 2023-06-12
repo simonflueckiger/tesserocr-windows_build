@@ -81,25 +81,24 @@ def version_to_int(version):
 
 
 def find_dll_dependencies_recursively(dll_path, search_paths):
-    dependencies_direct = subprocess.run(["dumpbin.exe", '/dependents', dll_path], text=True, capture_output=True)
-    dependency_names = re.findall(r'^\s{4}(\S*\.dll)$', dependencies_direct.stdout, re.MULTILINE)
+    dumpbin = subprocess.run(['dumpbin.exe', '/dependents', dll_path], capture_output=True)
+    dependency_names = re.findall(r'^\s{4}(\S*\.dll)$', dumpbin.stdout, re.MULTILINE)
 
-    dependencies_direct = []
-
+    dependencies = []
     for dependency_name in dependency_names:
         for search_path in search_paths:
             dependency_direct_full_path = os.path.join(search_path, dependency_name)
             if os.path.isfile(dependency_direct_full_path):
-                dependencies_direct.append(dependency_direct_full_path)
+                dependencies.append(dependency_direct_full_path)
                 break
 
     dependencies_recursive = []
-    for dependency_direct_full_path in dependencies_direct:
+    for dependency_direct_full_path in dependencies:
         dependencies_recursive.extend(find_dll_dependencies_recursively(dependency_direct_full_path, search_paths))
 
-    dependencies_direct.extend(dependencies_recursive)
+    dependencies.extend(dependencies_recursive)
 
-    return list(set(dependencies_direct))
+    return list(set(dependencies))
 
 
 def find_libraries(library_stems, search_paths, extension):
