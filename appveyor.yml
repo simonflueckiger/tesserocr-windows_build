@@ -261,7 +261,7 @@ for:
               # (since more recent Miniconda versions like Miniconda310 are not yet installed on this AppVeyor image)
               # conda version >= 23.5.0 is required (only works with miniconda >= 3.8) for conda-build on python 3.11,
               # using "conda update -y -n base -c defaults conda" doesn't work if installed version too far behind
-              conda install -n base -c defaults conda=23.5.0
+              conda install -y -n base -c defaults conda=23.5.0
 
               ForEach ($package in $packages) {
                   if ($conda_skip_python_versions.Contains($package.py_ver_str)) { Continue }
