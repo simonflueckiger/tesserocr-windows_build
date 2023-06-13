@@ -4,6 +4,7 @@ import os
 import shutil
 import codecs
 import re
+import subprocess
 from distutils.util import strtobool
 import setuptools  # needed for bdist_wheel
 from distutils.core import setup
@@ -77,6 +78,27 @@ def version_to_int(version):
 
     version_str += subversion_str
     return int(version_str, 16)
+
+
+def find_dll_dependencies_recursively(dll_path, search_paths):
+    dumpbin = subprocess.run(['dumpbin.exe', '/dependents', dll_path], universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    dependency_names = re.findall(r'^\s{4}(\S*\.dll)$', dumpbin.stdout, re.MULTILINE)
+
+    dependencies = []
+    for dependency_name in dependency_names:
+        for search_path in search_paths:
+            dependency_direct_full_path = os.path.join(search_path, dependency_name)
+            if os.path.isfile(dependency_direct_full_path):
+                dependencies.append(dependency_direct_full_path)
+                break
+
+    dependencies_recursive = []
+    for dependency_direct_full_path in dependencies:
+        dependencies_recursive.extend(find_dll_dependencies_recursively(dependency_direct_full_path, search_paths))
+
+    dependencies.extend(dependencies_recursive)
+
+    return list(set(dependencies))
 
 
 def find_libraries(library_stems, search_paths, extension):
@@ -163,23 +185,8 @@ build_dependencies = [
     "leptonica"
 ]
 
-# indentations with respect to dependency
-runtime_libraries = [
-    "tesseract",
-        "leptonica",
-            "gif",
-            "jpeg",
-            "openjp2",
-            "png",
-            "zlib",
-            "tiff",
-                "lzma",
-            "webpmux",
-            "webp"
-]
-
-
-runtime_library_paths = find_libraries(runtime_libraries, [vcpkg_bin, tesseract_bin], "dll")
+runtime_library_paths = find_libraries(["tesseract"], [tesseract_bin], "dll")
+runtime_library_paths.extend(find_dll_dependencies_recursively(runtime_library_paths[0], [vcpkg_bin, tesseract_bin]))
 _LOGGER.info("runtime libraries found:\n\t{}".format("\n\t".join(runtime_library_paths)))
 
 build_dependency_paths = find_libraries(build_dependencies, [vcpkg_lib, tesseract_lib], "lib")
