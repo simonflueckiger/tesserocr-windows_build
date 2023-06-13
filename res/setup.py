@@ -81,7 +81,7 @@ def version_to_int(version):
 
 
 def find_dll_dependencies_recursively(dll_path, search_paths):
-    dumpbin = subprocess.run(['dumpbin.exe', '/dependents', dll_path], universal_newlines=True, capture_output=True)
+    dumpbin = subprocess.run(['dumpbin.exe', '/dependents', dll_path], universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     dependency_names = re.findall(r'^\s{4}(\S*\.dll)$', dumpbin.stdout, re.MULTILINE)
 
     dependencies = []
