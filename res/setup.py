@@ -238,6 +238,7 @@ setup(
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Cython',
@@ -248,5 +249,5 @@ setup(
     ext_modules=ext_modules,
     packages=['tesserocr'],
     test_suite='tests',
-    setup_requires=['Cython>=0.23', 'wheel']
+    setup_requires=['Cython>=0.23,<3.1.0', 'wheel']
 )
