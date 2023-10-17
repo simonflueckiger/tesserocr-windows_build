@@ -249,5 +249,5 @@ setup(
     ext_modules=ext_modules,
     packages=['tesserocr'],
     test_suite='tests',
-    setup_requires=['Cython>=0.23', 'wheel']
+    setup_requires=['Cython>=0.23,<3.0.0', 'wheel']
 )
