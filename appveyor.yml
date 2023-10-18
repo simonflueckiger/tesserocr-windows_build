@@ -52,7 +52,7 @@ for:
 
     build_script:
       - pwsh: |      
-          $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+          #$blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
           
           # pull tesserocr submodule
           git submodule update --init --recursive
@@ -172,7 +172,7 @@ for:
                   python -m pip install --upgrade pip
                   
                   # install requirements
-                  python -m pip install --no-warn-script-location --no-input -r requirements-dev.txt
+                  python -m pip install --no-warn-script-location --no-input --only-binary :all: -r requirements-dev.txt
                   
                   # build wheel
                   python setup.py bdist_wheel
