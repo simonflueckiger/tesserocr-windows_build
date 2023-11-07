@@ -5,7 +5,7 @@ environment:
   PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311, 312
   # 2023-01-18 conda-build currently not supported for python 3.11 https://github.com/conda/conda/issues/11170
   # they added support for conda >= v23.5.0 but 32bit version is stuck at v4.x
-  #CONDA_SKIP_PYTHON_VERSIONS_64: 311
+  CONDA_SKIP_PYTHON_VERSIONS_64: 312 # no conda-build support yet (in latest conda release 3.27.0, SEP 27th 2023)
   CONDA_SKIP_PYTHON_VERSIONS_32: 311, 312
 
   matrix:
