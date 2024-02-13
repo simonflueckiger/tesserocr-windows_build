@@ -11,7 +11,7 @@ environment:
   matrix:
     - job_name: Build Wheels - Tesseract 3.x
       job_group: Build Wheels
-      VCPKG_COMMIT_ID: b63f61e # Leptonica 1.82.0 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
+      VCPKG_COMMIT_ID: ddea2bb # Leptonica 1.82.0 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
       TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
 
     - job_name: Build Conda Packages - Tesseract 3.x
@@ -20,7 +20,7 @@ environment:
 
     - job_name: Build Wheels - Tesseract 4.x
       job_group: Build Wheels
-      VCPKG_COMMIT_ID: b63f61e # Leptonica 1.82.0 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
+      VCPKG_COMMIT_ID: ddea2bb # Leptonica 1.82.0 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
       TESSERACT_COMMIT_ID: f38e7a7 # Tesseract 4.1.3
 
     - job_name: Build Conda Packages - Tesseract 4.x
