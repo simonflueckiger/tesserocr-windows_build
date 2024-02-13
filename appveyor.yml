@@ -5,8 +5,8 @@ environment:
   PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311, 312
   # 2023-01-18 conda-build currently not supported for python 3.11 https://github.com/conda/conda/issues/11170
   # they added support for conda >= v23.5.0 but 32bit version is stuck at v4.x
-  CONDA_SKIP_PYTHON_VERSIONS_64: 312 # no conda-build support yet (in latest conda release 3.27.0, SEP 27th 2023)
-  CONDA_SKIP_PYTHON_VERSIONS_32: 311, 312
+  # CONDA_SKIP_PYTHON_VERSIONS_64:
+  CONDA_SKIP_PYTHON_VERSIONS_32: 311
 
   matrix:
     - job_name: Build Wheels - Tesseract 3.x
@@ -271,7 +271,8 @@ for:
                   # (since more recent Miniconda versions like Miniconda310 are not yet installed on this AppVeyor image)
                   # conda version >= 23.5.0 is required (only attainable with miniconda >= 3.8) for conda-build on python 3.11,
                   # using "conda update -y -n base -c defaults conda" doesn't work if installed version too far behind
-                  conda install -y -n base -c defaults conda=23.5.0
+                  # fixed with (https://github.com/conda/conda/issues/9469#issuecomment-1503302008)
+                  conda update -y -n base -c defaults conda --repodata-fn=repodata.json
               } else { 
                   # download and install miniconda 32bit
                   $filename = "Miniconda3-py39_4.12.0-Windows-x86.exe"
@@ -281,7 +282,7 @@ for:
                   
                   # we want the latest conda to build for the most recent python version
                   # 32bit version is stuck at v4.x
-                  conda update -y -n base -c defaults conda
+                  conda update -y -n base -c defaults conda --repodata-fn=repodata.json
               }
               
               $conda_skip_python_versions = if ($platform_x64) { $conda_skip_python_versions_64 } else { $conda_skip_python_versions_32 }
