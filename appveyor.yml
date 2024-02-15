@@ -2,11 +2,11 @@ version: 2.6.2.{build}
 image: Visual Studio 2022
 
 environment:
-  PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311, 312
+  PYTHON_VERSIONS: 37, 38, 39, 310, 311, 312
   # 2023-01-18 conda-build currently not supported for python 3.11 https://github.com/conda/conda/issues/11170
   # they added support for conda >= v23.5.0 but 32bit version is stuck at v4.x
   # CONDA_SKIP_PYTHON_VERSIONS_64:
-  CONDA_SKIP_PYTHON_VERSIONS_32: 311
+  CONDA_SKIP_PYTHON_VERSIONS_32: 311, 312
 
   matrix:
     #- job_name: Build Wheels - Tesseract 3.x
