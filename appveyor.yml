@@ -166,7 +166,10 @@ for:
                       $env:BUILD_PLATFORM = "x86"
                       $env:TESSERACT_INSTALL_PATH = $tesseract_install_32
                       $env:Path = "C:\Python$py_ver;" + $env:Path
+                      "Building for $env:TESSERACT_COMMIT_ID"
                   }
+
+                  "Building for Python $py_ver-$env:BUILD_PLATFORM"
 
                   # upgrade pip
                   python -m pip install --upgrade pip
