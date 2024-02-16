@@ -29,8 +29,8 @@ environment:
 
     - job_name: Build Wheels - Tesseract 5.x
       job_group: Build Wheels
-      VCPKG_COMMIT_ID: master # Leptonica 1.83.1 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
-      TESSERACT_COMMIT_ID: e082522 # Tesseract 5.3.3
+      LEPTONICA_COMMIT_ID: 7e803e7 # Leptonica 1.84.1
+      TESSERACT_COMMIT_ID: 8ee020e # Tesseract 5.3.4
 
     - job_name: Build Conda Packages - Tesseract 5.x
       job_group: Build Conda Packages
@@ -82,21 +82,25 @@ for:
 
           # ------ Build Leptonica ----------------------------------------
 
-          # install and initialize vcpkg
-          git clone https://github.com/Microsoft/vcpkg.git
-          cd vcpkg
-          git checkout $env:VCPKG_COMMIT_ID
-          .\bootstrap-vcpkg.bat
+          $leptonica_install_64 = Join-Path -Path $PWD -ChildPath "leptonica_install_64"
+          $leptonica_install_32 = Join-Path -Path $PWD -ChildPath "leptonica_install_32"
 
-          # set VCPKG_PATH for setup.py
-          $env:VCPKG_PATH = "$PWD"
+          # install and initialize sw (Software Network)
+          Invoke-WebRequest -Uri "https://software-network.org/client/sw-master-windows_x86_64-client.zip" -OutFile sw_client.zip
+          Expand-Archive -LiteralPath sw_client.zip
+          $env:Path = "$(Join-Path -Path $PWD -ChildPath "sw_client");" + $env:Path
+          sw setup
 
-          # prevent debug build
-          Add-Content -Path .\triplets\x64-windows.cmake -Value 'set(VCPKG_BUILD_TYPE release)'
-          Add-Content -Path .\triplets\x86-windows.cmake -Value 'set(VCPKG_BUILD_TYPE release)'
+          # clone Leptonica and checkout correct version
+          git clone https://github.com/DanBloomberg/leptonica.git
+          cd leptonica
+          git checkout $env:LEPTONICA_COMMIT_ID
 
-          # build Leptonica x64 and x86
-          .\vcpkg.exe install leptonica:x64-windows leptonica:x86-windows
+          cmake -G "Visual Studio 17 2022" -A x64 -S . -B "build_64" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX="$leptonica_install_64"
+          cmake -G "Visual Studio 17 2022" -A Win32 -S . -B "build_32" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX="$leptonica_install_32"
+          
+          cmake --build build_64 --config Release --target install
+          cmake --build build_32 --config Release --target install
 
           cd ..
 
@@ -105,8 +109,9 @@ for:
           # prepare install directories
           $tesseract_install_64 = Join-Path -Path $PWD -ChildPath "tesseract_install_64"
           $tesseract_install_32 = Join-Path -Path $PWD -ChildPath "tesseract_install_32"
-          New-Item $tesseract_install_64 -ItemType Directory
-          New-Item $tesseract_install_32 -ItemType Directory
+          
+          # New-Item $tesseract_install_64 -ItemType Directory
+          # New-Item $tesseract_install_32 -ItemType Directory
 
           # clone and checkout Tesseract
           git clone https://github.com/tesseract-ocr/tesseract.git
