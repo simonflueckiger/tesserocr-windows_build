@@ -181,11 +181,13 @@ for:
                   # BUILD_PLATFORM and TESSERACT_VERSION are used in setup.py
                   if ($platform_x64) {
                       $env:BUILD_PLATFORM = "x64"
+                      $env:INCLUDE_PATHS = "$tesseract_install_64\include;$leptonica_install_64\include"
                       $env:LIB_PATHS = "$tesseract_build_64\Release;$leptonica_build_64\src\Release"
                       $env:DLL_PATHS = "$tesseract_build_64\bin\Release;$leptonica_build_64\bin\Release"
                       $env:Path = "C:\Python$py_ver-x64;" + $env:Path
                   } else {
                       $env:BUILD_PLATFORM = "x86"
+                      $env:INCLUDE_PATHS = "$tesseract_install_32\include;$leptonica_install_32\include"
                       $env:LIB_PATHS = "$tesseract_build_32\Release;$leptonica_build_32\src\Release"
                       $env:DLL_PATHS = "$tesseract_build_32\bin\Release;$leptonica_build_32\bin\Release"
                       $env:Path = "C:\Python$py_ver;" + $env:Path
