@@ -96,6 +96,9 @@ for:
           cd leptonica
           git checkout $env:LEPTONICA_COMMIT_ID
 
+          $leptonica_build_64 = Join-Path -Path $PWD -ChildPath "build_64"
+          $leptonica_build_32 = Join-Path -Path $PWD -ChildPath "build_32"
+
           cmake -G "Visual Studio 17 2022" -A x64 -S . -B "build_64" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX="$leptonica_install_64"
           cmake -G "Visual Studio 17 2022" -A Win32 -S . -B "build_32" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX="$leptonica_install_32"
           
@@ -151,6 +154,9 @@ for:
             "no patches found for Tesseract commit $env:TESSERACT_COMMIT_ID"
           }
 
+          $tesseract_build_64 = Join-Path -Path $PWD -ChildPath "build_64"
+          $tesseract_build_32 = Join-Path -Path $PWD -ChildPath "build_32"
+
           # build Tesseract x64 and x86
           cmake -G "Visual Studio 17 2022" -A x64 -S . -B "build_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_64" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DLeptonica_DIR="$leptonica_install_64\lib\cmake\leptonica"
           cmake -G "Visual Studio 17 2022" -A Win32 -S . -B "build_32" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_32" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DLeptonica_DIR="$leptonica_install_32\lib\cmake\leptonica"
@@ -175,13 +181,14 @@ for:
                   # BUILD_PLATFORM and TESSERACT_VERSION are used in setup.py
                   if ($platform_x64) {
                       $env:BUILD_PLATFORM = "x64"
-                      $env:TESSERACT_INSTALL_PATH = $tesseract_install_64
+                      $env:LIB_PATHS = "$tesseract_build_64\Release;$leptonica_build_64\src\Release"
+                      $env:DLL_PATHS = "$tesseract_build_64\bin\Release;$leptonica_build_64\bin\Release"
                       $env:Path = "C:\Python$py_ver-x64;" + $env:Path
                   } else {
                       $env:BUILD_PLATFORM = "x86"
-                      $env:TESSERACT_INSTALL_PATH = $tesseract_install_32
+                      $env:LIB_PATHS = "$tesseract_build_32\Release;$leptonica_build_32\src\Release"
+                      $env:DLL_PATHS = "$tesseract_build_32\bin\Release;$leptonica_build_32\bin\Release"
                       $env:Path = "C:\Python$py_ver;" + $env:Path
-                      "Building for $env:TESSERACT_COMMIT_ID"
                   }
 
                   "Building for Python $py_ver-$env:BUILD_PLATFORM"
