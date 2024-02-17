@@ -102,6 +102,16 @@ for:
           cmake --build build_64 --config Release --target install
           cmake --build build_32 --config Release --target install
 
+          # image libraries used for building leptonica will be added as additional linker dependencies to consuming projects
+          # without their full file path. this results in a LNK1181 "cannot open input file" even though these libs are not
+          # needed anyomre during the tesseract build, therefore we remove them from the respective targets cmake file.
+          foreach ($leptonica_install_dir in @("$leptonica_install_64", "$leptonica_install_32")) {
+              $targetsCmakePath = "$leptonica_install_dir\lib\cmake\leptonica\LeptonicaTargets.cmake"
+              $fileContent = Get-Content $targetsCmakePath -Raw
+              $patchedContent = $fileContent -replace 'set_target_properties\(leptonica PROPERTIES[\s\S]*?\)\r?\n', ''
+              Set-Content -Path $targetsCmakePath -Value $patchedContent
+          }
+
           cd ..
 
           # ------ Build Tesseract ----------------------------------------
@@ -142,8 +152,8 @@ for:
           }
 
           # build Tesseract x64 and x86
-          cmake -G "Visual Studio 17 2022" -A x64 -S . -B "build_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_64" -DCMAKE_PREFIX_PATH="$tesseract_install_64" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_PATH\scripts\buildsystems\vcpkg.cmake"
-          cmake -G "Visual Studio 17 2022" -A Win32 -S . -B "build_32" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_32" -DCMAKE_PREFIX_PATH="$tesseract_install_32" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_PATH\scripts\buildsystems\vcpkg.cmake"
+          cmake -G "Visual Studio 17 2022" -A x64 -S . -B "build_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_64" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DLeptonica_DIR="$leptonica_install_64\lib\cmake\leptonica"
+          cmake -G "Visual Studio 17 2022" -A Win32 -S . -B "build_32" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_32" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DLeptonica_DIR="$leptonica_install_32\lib\cmake\leptonica"
 
           cmake --build build_64 --config Release --target install
           cmake --build build_32 --config Release --target install
