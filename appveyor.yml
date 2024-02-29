@@ -60,7 +60,7 @@ for:
           # copy files into newly pulled submodule
           Copy-Item -Path "res\setup.py" -Destination "tesserocr"
           Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
-          Copy-Item -Path "res\tesserocr\image_dataset" -Destination "tesserocr\tests\image_dataset" -Recurse
+          Copy-Item -Path "res\image_dataset" -Destination "tesserocr\tests\image_dataset" -Recurse
           
           # apply tesserocr patches
           cd tesserocr
