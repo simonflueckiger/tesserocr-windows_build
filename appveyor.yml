@@ -60,6 +60,7 @@ for:
           # copy files into newly pulled submodule
           Copy-Item -Path "res\setup.py" -Destination "tesserocr"
           Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
+          Copy-Item -Path "res\tesserocr\image_dataset" -Destination "tesserocr\tests\image_dataset" -Recurse
           
           # apply tesserocr patches
           cd tesserocr
@@ -68,7 +69,8 @@ for:
 
           $patch_files = @(
               # addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
-              "disable_lstm_choices_test.patch"
+              # also tests whether leptonica can correctly use all image libraries
+              "test_api.patch"
           )
 
           Foreach ($patch_file in $patch_files)
@@ -231,6 +233,15 @@ for:
                   
                   # install previously built wheels
                   python -m pip install $wheel_path
+                  
+                  # execute test suite
+                  python tesserocr\tests\test_api.py
+                  
+                  # throw immediately if not all test passed
+                  if ($LastExitCode -ne 0) { exit $LastExitCode }
+                  
+                  # uninstall pillow and execute test suite again for tests which require pillow to not be present
+                  python -m pip uninstall --yes Pillow
                   
                   # execute test suite
                   python tesserocr\tests\test_api.py
