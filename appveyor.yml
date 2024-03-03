@@ -69,6 +69,7 @@ for:
 
           $patch_files = @(
               # addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
+              # addresses this PR for Pillow not being installed https://github.com/sirfz/tesserocr/pull/341
               # also tests whether leptonica can correctly use all image libraries
               "test_api.patch"
           )
