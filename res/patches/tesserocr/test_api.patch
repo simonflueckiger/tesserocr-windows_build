@@ -1,5 +1,5 @@
 diff --git a/tests/test_api.py b/tests/test_api.py
-index 766f59b..5857e1c 100644
+index 766f59b..877cc95 100644
 --- a/tests/test_api.py
 +++ b/tests/test_api.py
 @@ -50,6 +50,34 @@ class TestTessBaseApi(unittest.TestCase):
@@ -65,3 +65,11 @@ index 766f59b..5857e1c 100644
      def test_LSTM_choices(self):
          """Test GetBestLSTMSymbolChoices."""
          self._api.SetVariable("lstm_choice_mode", "2")
+@@ -279,6 +319,7 @@ class TestTessBaseApi(unittest.TestCase):
+         # Test if empty
+         self.assertFalse(result)
+ 
++    @unittest.skipIf(not pil_installed, "Pillow not installed")
+     def test_layout_getcomponents(self):
+         self._api.Init()
+         self._api.SetImageFile(self._image_file)
