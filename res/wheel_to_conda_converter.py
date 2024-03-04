@@ -55,6 +55,30 @@ def generate_index_json(wheel_info, tesseract_version):
     return index_json
 
 
+def extract_metadata_info(site_packages_path):
+    # Locate the .dist-info directory
+    dist_info_dirs = list(Path(site_packages_path).glob('*.dist-info'))
+    if not dist_info_dirs:
+        raise FileNotFoundError("No .dist-info directory found.")
+
+    metadata_path = dist_info_dirs[0] / 'METADATA'
+
+    # Initialize metadata dictionary
+    metadata = {"home": "", "license": "", "summary": ""}
+
+    # Extract the required information
+    with open(metadata_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            if line.startswith('Home-page:'):
+                metadata['home'] = line.strip().split(': ', 1)[1]
+            elif line.startswith('License:'):
+                metadata['license'] = line.strip().split(': ', 1)[1]
+            elif line.startswith('Summary:'):
+                metadata['summary'] = line.strip().split(': ', 1)[1]
+
+    return metadata
+
+
 def convert_wheel_to_conda(wheel_path, tesseract_version, output_path):
     # Create a temporary directory for Conda package content
     with tempfile.TemporaryDirectory() as conda_dir:
@@ -67,6 +91,9 @@ def convert_wheel_to_conda(wheel_path, tesseract_version, output_path):
         # Extract wheel
         with zipfile.ZipFile(wheel_path, 'r') as zip_ref:
             zip_ref.extractall(site_packages_path)
+
+        # Extract metadata from METADATA file before deleting .dist-info directories
+        metadata = extract_metadata_info(site_packages_path)
 
         # Delete *.dist-info directories at the first level of site_packages_path
         dist_info_dirs = Path(site_packages_path).glob('*.dist-info')
@@ -112,6 +139,11 @@ def convert_wheel_to_conda(wheel_path, tesseract_version, output_path):
         # Write index.json
         with open(os.path.join(info_dir, 'index.json'), 'w') as f:
             json.dump(generate_index_json(wheel_info, tesseract_version), f, indent=2)
+
+        # Generate and write the about.json file
+        about_json_path = os.path.join(info_dir, 'about.json')
+        with open(about_json_path, 'w') as f:
+            json.dump(metadata, f, indent=4)
 
         # Ensure the output path exists
         os.makedirs(output_path, exist_ok=True)
