@@ -206,12 +206,15 @@ for:
                   
                   # build wheel
                   python setup.py bdist_wheel
+
+                  # install wheel to generate version string
+                  $platform_tag = if ($platform_x64) { "amd64" } else { "win32" }
+                  $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*$platform_tag*.whl
+                  python -m pip install $wheel_path
               }
           }
 
           # create archive for convenience
-          $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*win32*.whl
-          python -m pip install $wheel_path
           python -c "import tesserocr; print(tesserocr.tesseract_version())" | Out-File -FilePath tesseract_version.txt
           $zip_name = "wheels_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
           Compress-Archive -Path dist\*.whl, tesseract_version.txt -DestinationPath dist\$zip_name
