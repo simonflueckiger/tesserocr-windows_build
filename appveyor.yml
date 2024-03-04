@@ -208,7 +208,7 @@ for:
                   python setup.py bdist_wheel
 
                   # install wheel to print version string
-                  $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*$(if ($platform_x64) { "amd64" } else { "win32" })*.whl
+                  $wheel_path = Get-ChildItem -Path dist\*cp$py_ver*$(if ($platform_x64) { "amd64" } else { "win32" })*.whl
                   python -m pip install $wheel_path
                   python -c "import tesserocr; print(tesserocr.tesseract_version())"
               }
