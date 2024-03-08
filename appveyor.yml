@@ -9,18 +9,18 @@ environment:
   PYTHON_VERSIONS: 37, 38, 39, 310, 311, 312
 
   matrix:
-    - job_name: Build Wheels - Tesseract 3.x
-      job_group: Build Wheels
-      LEPTONICA_COMMIT_ID: 97b82b0 # Leptonica 1.83.0
-      TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
+    #- job_name: Build Wheels - Tesseract 3.x
+    #  job_group: Build Wheels
+    #  LEPTONICA_COMMIT_ID: 97b82b0 # Leptonica 1.83.0
+    #  TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
 
-    - job_name: Build Conda Packages - Tesseract 3.x
-      job_group: Build Conda Packages
-      job_depends_on: Build Wheels - Tesseract 3.x
+    #- job_name: Build Conda Packages - Tesseract 3.x
+    #  job_group: Build Conda Packages
+    #  job_depends_on: Build Wheels - Tesseract 3.x
 
     - job_name: Build Wheels - Tesseract 4.x
       job_group: Build Wheels
-      LEPTONICA_COMMIT_ID: 7e803e7 # Leptonica 1.84.1
+      LEPTONICA_COMMIT_ID: b667978 # Leptonica 1.83.1
       #LEPTONICA_COMMIT_ID: f413826 # Leptonica 1.82.0
       TESSERACT_COMMIT_ID: f38e7a7 # Tesseract 4.1.3
 
