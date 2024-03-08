@@ -11,7 +11,7 @@ environment:
   matrix:
     - job_name: Build Wheels - Tesseract 3.x
       job_group: Build Wheels
-      LEPTONICA_COMMIT_ID: 7e803e7 # Leptonica 1.84.1
+      LEPTONICA_COMMIT_ID: f413826 # Leptonica 1.82.0
       TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
 
     - job_name: Build Conda Packages - Tesseract 3.x
