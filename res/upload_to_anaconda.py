@@ -31,7 +31,7 @@ def wheel_file_cmp(item1, item2):
     # is smaller than
     # tesserocr-2.5.2-py310_tesseract_4.1.1_0.tar.bz2
 
-    regex = R"py(\d+)_"
+    regex = R"py(\d+)\D"
     ver1 = re.findall(regex, item1)[0]
     ver2 = re.findall(regex, item2)[0]
 
