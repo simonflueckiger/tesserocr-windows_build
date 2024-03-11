@@ -185,33 +185,27 @@ for:
                   # BUILD_PLATFORM and TESSERACT_VERSION are used in setup.py
                   if ($platform_x64) {
                       $env:BUILD_PLATFORM = "x64"
+                      $python_path = "C:\Python$py_ver-x64"
+                      $conda_path = "C:\Miniconda3-x64"
                       $env:INCLUDE_PATHS = "$tesseract_install_64\include;$leptonica_install_64\include"
                       $env:LIB_PATHS = "$tesseract_build_64\Release;$leptonica_build_64\src\Release"
                       $env:DLL_PATHS = "$tesseract_build_64\bin\Release;$leptonica_build_64\bin\Release"
-                      
-                      if (Test-Path "C:\Python$py_ver-x64") {
-                          $env:Path = "C:\Python$py_ver-x64;" + $env:Path
-                      } else {
-                          # use miniconda if python version not found on agent
-                          (& "C:\Miniconda3-x64\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
-                          conda create -y --name py$py_ver python=$py_ver_dot
-                          conda activate py$py_ver
-                      }
-                      
                   } else {
                       $env:BUILD_PLATFORM = "x86"
+                      $python_path = "C:\Python$py_ver"
+                      $conda_path = "C:\Miniconda3"
                       $env:INCLUDE_PATHS = "$tesseract_install_32\include;$leptonica_install_32\include"
                       $env:LIB_PATHS = "$tesseract_build_32\Release;$leptonica_build_32\src\Release"
                       $env:DLL_PATHS = "$tesseract_build_32\bin\Release;$leptonica_build_32\bin\Release"
-                      
-                      if (Test-Path "C:\Python$py_ver") {
-                          $env:Path = "C:\Python$py_ver;" + $env:Path
-                      } else {
-                          # use miniconda if python version not found on agent
-                          (& "C:\Miniconda3\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
-                          conda create -y --name py$py_ver python=$py_ver_dot
-                          conda activate py$py_ver
-                      }
+                  }
+
+                  # use miniconda if python version not found on agent
+                  if (Test-Path $python_path) {
+                      $env:Path = "$python_path;" + $env:Path
+                  } else {
+                      (& "$conda_path\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
+                      conda create -y --name py$py_ver python=$py_ver_dot
+                      conda activate py$py_ver
                   }
 
                   "Building for Python $py_ver-$env:BUILD_PLATFORM"
@@ -249,14 +243,26 @@ for:
           # for each {64bit and 32bit} x {Python Versions}
           ForEach ($platform_x64 in @($true, $false)) {
               ForEach ($py_ver in $env:PYTHON_VERSIONS -split ", ") {
+                  $py_ver_dot = $py_ver[0] + "." + $py_ver.Substring(1)
                   
                   # set platform/python-version specific variables
                   if ($platform_x64) {
-                      $env:Path = "C:\Python$py_ver-x64;" + $env:Path
+                      $python_path = "C:\Python$py_ver-x64"
+                      $conda_path = "C:\Miniconda3-x64"
                       $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*amd64*.whl
                   } else {
-                      $env:Path = "C:\Python$py_ver;" + $env:Path
+                      $python_path = "C:\Python$py_ver"
+                      $conda_path = "C:\Miniconda3"
                       $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*win32*.whl
+                  }
+
+                  # use miniconda if python version not found on agent
+                  if (Test-Path $python_path) {
+                      $env:Path = "$python_path;" + $env:Path
+                  } else {
+                      (& "$conda_path\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
+                      conda create -y --name py$py_ver python=$py_ver_dot
+                      conda activate py$py_ver
                   }
                   
                   # install previously built wheels
