@@ -193,7 +193,7 @@ for:
                           $env:Path = "C:\Python$py_ver-x64;" + $env:Path
                       } else {
                           # use miniconda if python version not found on agent
-                          (& "C:\Miniconda38-x64\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
+                          (& "C:\Miniconda3-x64\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
                           conda create -y --name py$py_ver python=$py_ver_dot
                           conda activate py$py_ver
                       }
@@ -208,7 +208,7 @@ for:
                           $env:Path = "C:\Python$py_ver;" + $env:Path
                       } else {
                           # use miniconda if python version not found on agent
-                          (& "C:\Miniconda38\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
+                          (& "C:\Miniconda3\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
                           conda create -y --name py$py_ver python=$py_ver_dot
                           conda activate py$py_ver
                       }
