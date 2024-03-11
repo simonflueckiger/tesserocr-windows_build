@@ -261,7 +261,6 @@ for:
                       $env:Path = "$python_path;" + $env:Path
                   } else {
                       (& "$conda_path\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
-                      conda create -y --name py$py_ver python=$py_ver_dot
                       conda activate py$py_ver
                   }
                   
@@ -282,6 +281,9 @@ for:
                   
                   # throw immediately if not all test passed
                   if ($LastExitCode -ne 0) { exit $LastExitCode }
+
+                  # deactivate conda (not sure if really necessary)
+                  conda deactivate
               }
           }
 
