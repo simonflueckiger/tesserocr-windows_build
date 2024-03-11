@@ -6,7 +6,8 @@ image: Visual Studio 2022
 #                  maybe check changes to TIFF_TEST https://github.com/tesseract-ocr/tesseract/commit/54b9fe4de9f0aa3af15f52a6f27ffaf758b43769
 
 environment:
-  PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311, 312
+  #PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311, 312
+  PYTHON_VERSIONS: 36, 312
 
   matrix:
     #- job_name: Build Wheels - Tesseract 3.x
@@ -219,24 +220,13 @@ for:
                   # build wheel
                   python setup.py bdist_wheel
 
-                  # install wheel to print version string
-                  $wheel_path = Get-ChildItem -Path dist\*cp$py_ver*$(if ($platform_x64) { "amd64" } else { "win32" })*.whl
-                  python -m pip install $wheel_path
-                  # we need to change directory since there is a "tesserocr\__init__.py" here which would be prioritized by "import tesserocr"
-                  Push-Location ..; python -c "import tesserocr; print(tesserocr.tesseract_version())"; Pop-Location
-
                   # deactivate conda (not sure if really necessary)
                   conda deactivate
               }
           }
 
-          # create archive for convenience
-          Push-Location ..; python -c "import tesserocr; print(tesserocr.tesseract_version())" | Out-File -FilePath tesserocr/tesseract_version.txt; Pop-Location
-          $zip_name = "wheels_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
-          Compress-Archive -Path dist\*.whl, tesseract_version.txt -DestinationPath dist\$zip_name
-
     test_script:
-      - pwsh: |      
+      - pwsh: | 
           # test suite needs TESSDATA_PREFIX to point to a valid tessdata location 
           $env:TESSDATA_PREFIX = "$PWD\res\tessdata"
 
@@ -266,6 +256,10 @@ for:
                   
                   # install previously built wheels
                   python -m pip install $wheel_path
+
+                  # append python version and tesseract version string to file
+                  python -c "import platform; print(f'------ Python {platform.python_version()} ({platform.architecture()[0]}) ------')" >> versions.txt
+                  python -c "import tesserocr; print(tesserocr.tesseract_version()); print()" >> versions.txt
                   
                   # execute test suite
                   python tesserocr\tests\test_api.py
@@ -287,11 +281,17 @@ for:
               }
           }
 
+          # create archive for convenience
+          $zip_name = "wheels_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
+          Compress-Archive -Path tesserocr\dist\*.whl, versions.txt -DestinationPath tesserocr\dist\$zip_name
+
     artifacts:
       - path: tesserocr\dist\*.whl
         name: wheel
       - path: tesserocr\dist\wheels_*.zip
         name: archive
+      - path: versions.txt
+        name: versions
 
   - matrix:
       only:
@@ -320,7 +320,7 @@ for:
           }
 
           # get Tesseract version from file
-          $env:TESSERACT_VERSION = Get-Content -Path wheels\tesseract_version.txt | Select-String -Pattern "tesseract (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value }
+          $env:TESSERACT_VERSION = Get-Content -Path wheels\versions.txt | Select-String -Pattern "tesseract (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value }
 
           # create package output directories
           $conda_package_folder_64 = "conda_packages\win-64"
