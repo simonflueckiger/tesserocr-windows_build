@@ -186,7 +186,7 @@ for:
           }
           
           # Zip the organized files
-          $zip_path = "tesseract_leptonica_binaries" + $env:APPVEYOR_BUILD_VERSION + ".zip"
+          $zip_path = "tesseract_leptonica_binaries_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
           Compress-Archive -Path "$artifact_dir\*" -DestinationPath $zip_path
 
     artifacts:
