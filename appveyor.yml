@@ -51,7 +51,7 @@ matrix:
   fast_finish: true
 
 for:
-  - - matrix:
+  - matrix:
       only:
         - job_group: Build Dependencies
 
