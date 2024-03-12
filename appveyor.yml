@@ -320,7 +320,7 @@ for:
           }
 
           # get Tesseract version from file
-          $env:TESSERACT_VERSION = Get-Content -Path wheels\versions.txt | Select-String -Pattern "tesseract (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value }
+          $env:TESSERACT_VERSION = Get-Content -Path wheels\versions.txt | Select-String -Pattern "tesseract (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -First 1
 
           # create package output directories
           $conda_package_folder_64 = "conda_packages\win-64"
