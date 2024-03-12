@@ -177,7 +177,7 @@ for:
           
               foreach ($component in $paths.Keys) {
                   foreach ($type in $paths[$component].Keys) {
-                      $target_dir = "$dest_bitness_dir\$component\$type"
+                      $target_dir = "$dest_bitness_dir\$type"
                       $source_path = $paths[$component][$type]
                       New-Item -Path $target_dir -ItemType Directory -Force
                       Copy-Item -Path "$source_path\*" -Destination $target_dir -Recurse -Force
@@ -186,7 +186,7 @@ for:
           }
           
           # Zip the organized files
-          $zip_path = "tesseract_leptonica_binaries.zip"
+          $zip_path = "tesseract_leptonica_binaries" + $env:APPVEYOR_BUILD_VERSION + ".zip"
           Compress-Archive -Path "$artifact_dir\*" -DestinationPath $zip_path
 
     artifacts:
@@ -198,7 +198,30 @@ for:
         - job_group: Build Wheels
 
     build_script:
-      - pwsh: |              
+      - pwsh: |
+          # ------ Download dependencies ----------------------------------------
+          
+          # call AppVeyor api to get the id of the 'Build Dependencies' job corresponding to this job's Tesseract version
+          $request = Invoke-WebRequest -Uri "https://ci.appveyor.com/api/projects/simonflueckiger/tesserocr-windows-build/build/$env:APPVEYOR_BUILD_VERSION" -Method:Get -ContentType "application/xml"
+          $job_suffix = ($env:APPVEYOR_JOB_NAME -split " ")[-1]
+          $job = ([xml]$request.Content).ProjectBuildResults.Build.Jobs.BuildJobModel | Where-Object Name -match "Build Dependencies.*$job_suffix"
+
+          # piece together the dependencies zip artifact url from 'Build Dependencies' job
+          $url = "https://ci.appveyor.com/api/buildjobs/" + $job.JobId + "/artifacts/tesseract_leptonica_binaries_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
+
+          # download and unpack the archive
+          Invoke-WebRequest $url -OutFile dependencies.zip
+          Expand-Archive -Path dependencies.zip
+
+          $dep_bin_64 = Join-Path -Path $PWD -ChildPath "dependencies\64bit\bin"
+          $dep_bin_32 = Join-Path -Path $PWD -ChildPath "dependencies\32bit\bin"
+          $dep_lib_64 = Join-Path -Path $PWD -ChildPath "dependencies\64bit\lib"
+          $dep_lib_32 = Join-Path -Path $PWD -ChildPath "dependencies\32bit\lib"
+          $dep_inc_64 = Join-Path -Path $PWD -ChildPath "dependencies\64bit\include"
+          $dep_inc_32 = Join-Path -Path $PWD -ChildPath "dependencies\32bit\include"
+
+          # ------ Prepare tesserocr ----------------------------------------
+          
           # pull tesserocr submodule
           git submodule update --init --recursive
 
@@ -246,16 +269,16 @@ for:
                       $env:BUILD_PLATFORM = "x64"
                       $python_path = "C:\Python$py_ver-x64"
                       $conda_path = "C:\Miniconda3-x64"
-                      $env:INCLUDE_PATHS = "$tesseract_install_64\include;$leptonica_install_64\include"
-                      $env:LIB_PATHS = "$tesseract_build_64\Release;$leptonica_build_64\src\Release"
-                      $env:DLL_PATHS = "$tesseract_build_64\bin\Release;$leptonica_build_64\bin\Release"
+                      $env:INCLUDE_PATHS = "$dep_inc_64"
+                      $env:LIB_PATHS = "$dep_lib_64"
+                      $env:DLL_PATHS = "$dep_bin_64"
                   } else {
                       $env:BUILD_PLATFORM = "x86"
                       $python_path = "C:\Python$py_ver"
                       $conda_path = "C:\Miniconda3"
-                      $env:INCLUDE_PATHS = "$tesseract_install_32\include;$leptonica_install_32\include"
-                      $env:LIB_PATHS = "$tesseract_build_32\Release;$leptonica_build_32\src\Release"
-                      $env:DLL_PATHS = "$tesseract_build_32\bin\Release;$leptonica_build_32\bin\Release"
+                      $env:INCLUDE_PATHS = "$dep_inc_32"
+                      $env:LIB_PATHS = "$dep_lib_32"
+                      $env:DLL_PATHS = "$dep_bin_32"
                   }
 
                   # use miniconda if python version not found on agent
