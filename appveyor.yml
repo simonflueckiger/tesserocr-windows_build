@@ -220,6 +220,8 @@ for:
           $dep_inc_64 = Join-Path -Path $PWD -ChildPath "dependencies\64bit\include"
           $dep_inc_32 = Join-Path -Path $PWD -ChildPath "dependencies\32bit\include"
 
+          $env:TESSERACT_VERSION = $dep_bin_64\tesseract.exe --version | Select-String -Pattern "tesseract (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -First 1
+
           # ------ Prepare tesserocr ----------------------------------------
           
           # pull tesserocr submodule
