@@ -166,12 +166,12 @@ for:
                   "tesseract" = @{
                       "lib" = "$tesseract_build\Release";
                       "bin" = "$tesseract_build\bin\Release";
-                      "inc" = "$tesseract_install\include"
+                      "include" = "$tesseract_install\include"
                   };
                   "leptonica" = @{
                       "lib" = "$leptonica_build\src\Release";
                       "bin" = "$leptonica_build\bin\Release";
-                      "inc" = "$leptonica_install\include"
+                      "include" = "$leptonica_install\include"
                   }
               }
           
@@ -180,13 +180,13 @@ for:
                       $target_dir = "$dest_bitness_dir\$component\$type"
                       $source_path = $paths[$component][$type]
                       New-Item -Path $target_dir -ItemType Directory -Force
-                      Copy-Item -Path "$source_path\*" -Destination $target_dir -Recurse
+                      Copy-Item -Path "$source_path\*" -Destination $target_dir -Recurse -Force
                   }
               }
           }
           
-          # zip the organized files
-          $zip_path = "tesseract_leptonica_binaries_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
+          # Zip the organized files
+          $zip_path = "tesseract_leptonica_binaries.zip"
           Compress-Archive -Path "$artifact_dir\*" -DestinationPath $zip_path
 
     artifacts:
