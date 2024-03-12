@@ -28,10 +28,14 @@ environment:
     #  job_group: Build Conda Packages
     #  job_depends_on: Build Wheels - Tesseract 4.x
 
-    - job_name: Build Wheels - Tesseract 5.x
-      job_group: Build Wheels
+    - job_name: Build Dependencies - Tesseract 5.x
+      job_group: Build Dependencies
       LEPTONICA_COMMIT_ID: 7e803e7 # Leptonica 1.84.1
       TESSERACT_COMMIT_ID: 8ee020e # Tesseract 5.3.4
+
+    - job_name: Build Wheels - Tesseract 5.x
+      job_group: Build Wheels
+      job_depends_on: Build Dependencies - Tesseract 5.x
 
     - job_name: Build Conda Packages - Tesseract 5.x
       job_group: Build Conda Packages
@@ -47,42 +51,13 @@ matrix:
   fast_finish: true
 
 for:
-  - matrix:
+  - - matrix:
       only:
-        - job_group: Build Wheels
+        - job_group: Build Dependencies
 
     build_script:
       - pwsh: |      
           #$blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-          
-          # pull tesserocr submodule
-          git submodule update --init --recursive
-
-          # copy files into newly pulled submodule
-          Copy-Item -Path "res\setup.py" -Destination "tesserocr"
-          Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
-          Copy-Item -Path "res\image_dataset" -Destination "tesserocr\tests\image_dataset" -Recurse
-          
-          # apply tesserocr patches
-          cd tesserocr
-          
-          $patch_directory = "..\res\patches\tesserocr"
-
-          $patch_files = @(
-              # addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
-              # addresses this PR for Pillow not being installed https://github.com/sirfz/tesserocr/pull/341
-              # also tests whether leptonica can correctly use all image libraries
-              "test_api.patch"
-          )
-
-          Foreach ($patch_file in $patch_files)
-          {
-              $full_path = Join-Path -Path $patch_directory -ChildPath $patch_file
-              "applying ""$full_path"""
-              git apply "$full_path"
-          }
-          
-          cd ..
 
           # ------ Build Leptonica ----------------------------------------
 
@@ -168,6 +143,89 @@ for:
           cmake --build build_64 --config Release --target install
           cmake --build build_32 --config Release --target install
 
+          cd ..
+
+          # ------ Package Artifacts ----------------------------------------
+          
+          $artifact_dir = "artifacts"
+          
+          ForEach ($platform_x64 in @($true, $false)) {
+              # Determine bitness based on platform
+              $bitness = if ($platform_x64) { "64" } else { "32" }
+          
+              # Dynamically set paths based on platform
+              $tesseract_build = if ($platform_x64) { $tesseract_build_64 } else { $tesseract_build_32 }
+              $tesseract_install = if ($platform_x64) { $tesseract_install_64 } else { $tesseract_install_32 }
+              $leptonica_build = if ($platform_x64) { $leptonica_build_64 } else { $leptonica_build_32 }
+              $leptonica_install = if ($platform_x64) { $leptonica_install_64 } else { $leptonica_install_32 }
+          
+              $dest_bitness_dir = "$artifact_dir\${bitness}bit"
+              
+              # Nested hashtable for paths
+              $paths = @{
+                  "tesseract" = @{
+                      "lib" = "$tesseract_build\Release";
+                      "bin" = "$tesseract_build\bin\Release";
+                      "inc" = "$tesseract_install\include"
+                  };
+                  "leptonica" = @{
+                      "lib" = "$leptonica_build\src\Release";
+                      "bin" = "$leptonica_build\bin\Release";
+                      "inc" = "$leptonica_install\include"
+                  }
+              }
+          
+              foreach ($component in $paths.Keys) {
+                  foreach ($type in $paths[$component].Keys) {
+                      $target_dir = "$dest_bitness_dir\$component\$type"
+                      $source_path = $paths[$component][$type]
+                      New-Item -Path $target_dir -ItemType Directory -Force
+                      Copy-Item -Path "$source_path\*" -Destination $target_dir -Recurse
+                  }
+              }
+          }
+          
+          # zip the organized files
+          $zip_path = "tesseract_leptonica_binaries_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
+          Compress-Archive -Path "$artifact_dir\*" -DestinationPath $zip_path
+
+    artifacts:
+      - path: tesseract_leptonica_binaries_*.zip
+        name: archive
+          
+  - matrix:
+      only:
+        - job_group: Build Wheels
+
+    build_script:
+      - pwsh: |              
+          # pull tesserocr submodule
+          git submodule update --init --recursive
+
+          # copy files into newly pulled submodule
+          Copy-Item -Path "res\setup.py" -Destination "tesserocr"
+          Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
+          Copy-Item -Path "res\image_dataset" -Destination "tesserocr\tests\image_dataset" -Recurse
+          
+          # apply tesserocr patches
+          cd tesserocr
+          
+          $patch_directory = "..\res\patches\tesserocr"
+
+          $patch_files = @(
+              # addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
+              # addresses this PR for Pillow not being installed https://github.com/sirfz/tesserocr/pull/341
+              # also tests whether leptonica can correctly use all image libraries
+              "test_api.patch"
+          )
+
+          Foreach ($patch_file in $patch_files)
+          {
+              $full_path = Join-Path -Path $patch_directory -ChildPath $patch_file
+              "applying ""$full_path"""
+              git apply "$full_path"
+          }
+          
           cd ..
 
           # ------ Build tesserocr ----------------------------------------
