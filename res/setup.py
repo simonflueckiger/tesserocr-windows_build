@@ -163,33 +163,26 @@ class ExtensionWithDLL(Extension):
 
 # get environment variables
 TESSERACT_VERSION = get_environment_variable('TESSERACT_VERSION')
-VCPKG_PATH = get_environment_variable('VCPKG_PATH')
-TESSERACT_INSTALL_PATH = get_environment_variable('TESSERACT_INSTALL_PATH')
 BUILD_PLATFORM = get_environment_variable('BUILD_PLATFORM')
+INCLUDE_PATHS = get_environment_variable('INCLUDE_PATHS').split(';')
+LIB_PATHS = get_environment_variable('LIB_PATHS').split(';')
+DLL_PATHS = get_environment_variable('DLL_PATHS').split(';')
 
 # parse tesseract version
 tesseract_version_int = version_to_int(TESSERACT_VERSION)
 tesseract_version_major = major_version(TESSERACT_VERSION)
 _LOGGER.info(f"Tesseract version {TESSERACT_VERSION} converted to {tesseract_version_int} int representation")
 
-vcpkg_bin = os.path.join(VCPKG_PATH, Rf"installed\{BUILD_PLATFORM}-windows\bin")
-vcpkg_lib = os.path.join(VCPKG_PATH, Rf"installed\{BUILD_PLATFORM}-windows\lib")
-vcpkg_include = os.path.join(VCPKG_PATH, Rf"installed\{BUILD_PLATFORM}-windows\include")
-
-tesseract_bin = os.path.join(TESSERACT_INSTALL_PATH, "bin")
-tesseract_lib = os.path.join(TESSERACT_INSTALL_PATH, "lib")
-tesseract_include = os.path.join(TESSERACT_INSTALL_PATH, "include")
-
 build_dependencies = [
     "tesseract",
     "leptonica"
 ]
 
-runtime_library_paths = find_libraries(["tesseract"], [tesseract_bin], "dll")
-runtime_library_paths.extend(find_dll_dependencies_recursively(runtime_library_paths[0], [vcpkg_bin, tesseract_bin]))
+runtime_library_paths = find_libraries(["tesseract"], DLL_PATHS, "dll")
+runtime_library_paths.extend(find_dll_dependencies_recursively(runtime_library_paths[0], DLL_PATHS))
 _LOGGER.info("runtime libraries found:\n\t{}".format("\n\t".join(runtime_library_paths)))
 
-build_dependency_paths = find_libraries(build_dependencies, [vcpkg_lib, tesseract_lib], "lib")
+build_dependency_paths = find_libraries(build_dependencies, LIB_PATHS, "lib")
 _LOGGER.info("build dependencies found:\n\t{}".format("\n\t".join(build_dependency_paths)))
 build_dependency_names = [os.path.splitext(os.path.basename(library_path))[0] for library_path in build_dependency_paths]
 
@@ -198,12 +191,8 @@ ext_modules = [
         name="tesserocr._tesserocr",
         sources=["tesserocr.pyx"],
         language='c++',
-        include_dirs=[
-            vcpkg_include, tesseract_include
-        ],
-        library_dirs=[
-            vcpkg_lib, tesseract_lib
-        ],
+        include_dirs=INCLUDE_PATHS,
+        library_dirs=LIB_PATHS,
         libraries=build_dependency_names,
         dlls=runtime_library_paths
     )
@@ -238,6 +227,7 @@ setup(
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Cython',
@@ -248,5 +238,5 @@ setup(
     ext_modules=ext_modules,
     packages=['tesserocr'],
     test_suite='tests',
-    setup_requires=['Cython>=0.23', 'wheel']
+    setup_requires=['Cython>=0.23,<3.0.0', 'wheel']
 )

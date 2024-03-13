@@ -1,0 +1,75 @@
+diff --git a/tests/test_api.py b/tests/test_api.py
+index 766f59b..877cc95 100644
+--- a/tests/test_api.py
++++ b/tests/test_api.py
+@@ -50,6 +50,34 @@ class TestTessBaseApi(unittest.TestCase):
+     _test_dir = os.path.abspath(os.path.dirname(__file__))
+     _image_file = os.path.join(_test_dir, "eurotext.png")
+ 
++    # https://github.com/DanBloomberg/leptonica/blob/5e4f9a6dba8a440689edb803b19d72648282e270/src/imageio.h#L33C1-L43C35
++    #  *  At present, there are 9 file formats for images that can be read
++    #  *  and written:
++    #  *      png (requires libpng, libz)
++    #  *      jpeg (requires libjpeg)
++    #  *      tiff (requires libtiff, libz)
++    #  *      gif (requires libgif)
++    #  *      webp (requires libwebp)
++    #  *      jp2 (requires libopenjp2)
++    #  *      bmp (no library required)
++    #  *      pnm (no library required)
++    #  *      spix (no library required)
++
++    _dataset_dir = os.path.join(_test_dir, "image_dataset")
++    _image_dataset = [
++        os.path.join(_dataset_dir, "eurotext.bmp"),
++        os.path.join(_dataset_dir, "eurotext.gif"),
++        os.path.join(_dataset_dir, "eurotext.jp2"),
++        os.path.join(_dataset_dir, "eurotext.png"),
++        os.path.join(_dataset_dir, "eurotext.pnm"),
++        os.path.join(_dataset_dir, "eurotext.spix"),
++        os.path.join(_dataset_dir, "eurotext.tif"),
++        os.path.join(_dataset_dir, "eurotext.webp"),
++        os.path.join(_dataset_dir, "eurotext_lossy.jp2"),
++        os.path.join(_dataset_dir, "eurotext_lossy.jpg"),
++        os.path.join(_dataset_dir, "eurotext_lossy.webp")
++    ]
++
+     def setUp(self):
+         if pil_installed:
+             with open(self._image_file, "rb") as f:
+@@ -115,6 +143,17 @@ class TestTessBaseApi(unittest.TestCase):
+         text2 = tesserocr.file_to_text(self._image_file)
+         self.assertEqual(text, text2)
+ 
++    @unittest.skipIf(pil_installed, "Pillow installed -> Leptonica usage can't be asserted")
++    def test_leptonica_image_formats(self):
++        """Test SetImageFile and GetUTF8Text."""
++        with self.assertRaises(ImportError):
++            import PIL
++
++        for test_image_file in self._image_dataset:
++            self._api.SetImageFile(test_image_file)
++            text = self._api.GetUTF8Text()
++            self.assertIn("quick", text)
++
+     @unittest.skipIf(not pil_installed, "Pillow not installed")
+     def test_thresholded_image(self):
+         """Test GetThresholdedImage and GetThresholdedImageScaleFactor."""
+@@ -183,7 +222,8 @@ class TestTessBaseApi(unittest.TestCase):
+         self.assertEqual([v[0] for v in mapped_confidences], words)
+         self.assertEqual([v[1] for v in mapped_confidences], confidences)
+ 
+-    @unittest.skipIf(_TESSERACT_VERSION < 0x4000000, "tesseract < 4")
++    # https://github.com/sirfz/tesserocr/issues/295
++    @unittest.skipIf(_TESSERACT_VERSION < 0x4000000 or _TESSERACT_VERSION >= 0x5000000, "tesseract < 4 or tesseract >= 5")
+     def test_LSTM_choices(self):
+         """Test GetBestLSTMSymbolChoices."""
+         self._api.SetVariable("lstm_choice_mode", "2")
+@@ -279,6 +319,7 @@ class TestTessBaseApi(unittest.TestCase):
+         # Test if empty
+         self.assertFalse(result)
+ 
++    @unittest.skipIf(not pil_installed, "Pillow not installed")
+     def test_layout_getcomponents(self):
+         self._api.Init()
+         self._api.SetImageFile(self._image_file)

@@ -1,36 +1,59 @@
-version: 2.6.0.{build}
+version: 2.6.2.{build}
 image: Visual Studio 2022
 
+# NOTE 2024-03-13: Tesseract 3.x and 4.x seem to be only compatible with leptonica .so version <= 5.x (<= v1.82)
+#                  https://github.com/DanBloomberg/leptonica/blob/32af1df77f4f6311e581f2e263fc51506a5b6340/README.html#L1230
+#                  https://github.com/DanBloomberg/leptonica/commit/e8b670d9357c78a6a93fa23e27bb25675c695fa3
+#                  https://github.com/tesseract-ocr/tesseract/commit/f36c0d019be59cae3b96da0d89d870dbe83e9714
+#
+# TODO 2024-03-03: During Tesseract CMake config we get "Leptonica was build without TIFF support! Disabling TIFF support..."
+#                  even though loading TIFFs in tesserocr via Leptonica seems to work fine.
+#                  maybe check changes to TIFF_TEST https://github.com/tesseract-ocr/tesseract/commit/54b9fe4de9f0aa3af15f52a6f27ffaf758b43769
+
 environment:
-  PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311
-  # 2023-01-18 conda-build currently not supported for python 3.11 https://github.com/conda/conda/issues/11170
-  # they added support for conda >= v23.5.0 but 32bit version is stuck at v4.x
-  #CONDA_SKIP_PYTHON_VERSIONS_64: 311
-  CONDA_SKIP_PYTHON_VERSIONS_32: 311
+  PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311, 312
 
   matrix:
+    # ------ Tesseract 3.x ----------------------------------------
+    
+    - job_name: Build Dependencies - Tesseract 3.x
+      job_group: Build Dependencies
+      LEPTONICA_COMMIT_ID: f413826 # Leptonica 1.82.0
+      TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
+    
     - job_name: Build Wheels - Tesseract 3.x
       job_group: Build Wheels
-      VCPKG_COMMIT_ID: 1e9facc # Leptonica 1.82.0 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
-      TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
+      job_depends_on: Build Dependencies - Tesseract 3.x
 
     - job_name: Build Conda Packages - Tesseract 3.x
       job_group: Build Conda Packages
       job_depends_on: Build Wheels - Tesseract 3.x
 
+    # ------ Tesseract 4.x ----------------------------------------
+
+    - job_name: Build Dependencies - Tesseract 4.x
+      job_group: Build Dependencies
+      LEPTONICA_COMMIT_ID: f413826 # Leptonica 1.82.0
+      TESSERACT_COMMIT_ID: f38e7a7 # Tesseract 4.1.3
+
     - job_name: Build Wheels - Tesseract 4.x
       job_group: Build Wheels
-      VCPKG_COMMIT_ID: 1e9facc # Leptonica 1.82.0 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
-      TESSERACT_COMMIT_ID: f38e7a7 # Tesseract 4.1.3
+      job_depends_on: Build Dependencies - Tesseract 4.x
 
     - job_name: Build Conda Packages - Tesseract 4.x
       job_group: Build Conda Packages
       job_depends_on: Build Wheels - Tesseract 4.x
 
+    # ------ Tesseract 5.x ----------------------------------------
+
+    - job_name: Build Dependencies - Tesseract 5.x
+      job_group: Build Dependencies
+      LEPTONICA_COMMIT_ID: 7e803e7 # Leptonica 1.84.1
+      TESSERACT_COMMIT_ID: 8ee020e # Tesseract 5.3.4
+
     - job_name: Build Wheels - Tesseract 5.x
       job_group: Build Wheels
-      VCPKG_COMMIT_ID: ddea2bb # Leptonica 1.83.1 (https://github.com/microsoft/vcpkg/blob/master/ports/leptonica/vcpkg.json)
-      TESSERACT_COMMIT_ID: 71af454 # Tesseract 5.3.1
+      job_depends_on: Build Dependencies - Tesseract 5.x
 
     - job_name: Build Conda Packages - Tesseract 5.x
       job_group: Build Conda Packages
@@ -48,53 +71,44 @@ matrix:
 for:
   - matrix:
       only:
-        - job_group: Build Wheels
+        - job_group: Build Dependencies
 
     build_script:
-      - pwsh: |      
-          # pull tesserocr submodule
-          git submodule update --init --recursive
-
-          # copy files into newly pulled submodule
-          Copy-Item -Path "res\setup.py" -Destination "tesserocr"
-          Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
-          
-          # apply tesserocr patches
-          cd tesserocr
-          
-          $patch_directory = "..\res\patches\tesserocr"
-
-          $patch_files = @(
-              # addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
-              "disable_lstm_choices_test.patch"
-          )
-
-          Foreach ($patch_file in $patch_files)
-          {
-              $full_path = Join-Path -Path $patch_directory -ChildPath $patch_file
-              "applying ""$full_path"""
-              git apply "$full_path"
-          }
-          
-          cd ..
-
+      - pwsh: | 
           # ------ Build Leptonica ----------------------------------------
 
-          # install and initialize vcpkg
-          git clone https://github.com/Microsoft/vcpkg.git
-          cd vcpkg
-          git checkout $env:VCPKG_COMMIT_ID
-          .\bootstrap-vcpkg.bat
+          $leptonica_install_64 = Join-Path -Path $PWD -ChildPath "leptonica_install_64"
+          $leptonica_install_32 = Join-Path -Path $PWD -ChildPath "leptonica_install_32"
 
-          # set VCPKG_PATH for setup.py
-          $env:VCPKG_PATH = "$PWD"
+          # install and initialize sw (Software Network)
+          Invoke-WebRequest -Uri "https://software-network.org/client/sw-master-windows_x86_64-client.zip" -OutFile sw_client.zip
+          Expand-Archive -LiteralPath sw_client.zip
+          $env:Path = "$(Join-Path -Path $PWD -ChildPath "sw_client");" + $env:Path
+          sw setup
 
-          # prevent debug build
-          Add-Content -Path .\triplets\x64-windows.cmake -Value 'set(VCPKG_BUILD_TYPE release)'
-          Add-Content -Path .\triplets\x86-windows.cmake -Value 'set(VCPKG_BUILD_TYPE release)'
+          # clone Leptonica and checkout correct version
+          git clone https://github.com/DanBloomberg/leptonica.git
+          cd leptonica
+          git checkout $env:LEPTONICA_COMMIT_ID
 
-          # build Leptonica x64 and x86
-          .\vcpkg.exe install leptonica:x64-windows leptonica:x86-windows
+          $leptonica_build_64 = Join-Path -Path $PWD -ChildPath "build_64"
+          $leptonica_build_32 = Join-Path -Path $PWD -ChildPath "build_32"
+
+          cmake -G "Visual Studio 17 2022" -A x64 -S . -B "build_64" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX="$leptonica_install_64"
+          cmake -G "Visual Studio 17 2022" -A Win32 -S . -B "build_32" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX="$leptonica_install_32"
+          
+          cmake --build build_64 --config Release --target install
+          cmake --build build_32 --config Release --target install
+
+          # image libraries used for building leptonica will be added as additional linker dependencies to consuming projects
+          # without their full file path. this results in a LNK1181 "cannot open input file" even though these libs are not
+          # needed anyomre during the tesseract build, therefore we remove them from the respective targets cmake file.
+          foreach ($leptonica_install_dir in @("$leptonica_install_64", "$leptonica_install_32")) {
+              $targetsCmakePath = "$leptonica_install_dir\lib\cmake\leptonica\LeptonicaTargets.cmake"
+              $fileContent = Get-Content $targetsCmakePath -Raw
+              $patchedContent = $fileContent -replace 'set_target_properties\(leptonica PROPERTIES[\s\S]*?\)\r?\n', ''
+              Set-Content -Path $targetsCmakePath -Value $patchedContent
+          }
 
           cd ..
 
@@ -103,8 +117,9 @@ for:
           # prepare install directories
           $tesseract_install_64 = Join-Path -Path $PWD -ChildPath "tesseract_install_64"
           $tesseract_install_32 = Join-Path -Path $PWD -ChildPath "tesseract_install_32"
-          New-Item $tesseract_install_64 -ItemType Directory
-          New-Item $tesseract_install_32 -ItemType Directory
+          
+          # New-Item $tesseract_install_64 -ItemType Directory
+          # New-Item $tesseract_install_32 -ItemType Directory
 
           # clone and checkout Tesseract
           git clone https://github.com/tesseract-ocr/tesseract.git
@@ -134,13 +149,123 @@ for:
             "no patches found for Tesseract commit $env:TESSERACT_COMMIT_ID"
           }
 
+          $tesseract_build_64 = Join-Path -Path $PWD -ChildPath "build_64"
+          $tesseract_build_32 = Join-Path -Path $PWD -ChildPath "build_32"
+
           # build Tesseract x64 and x86
-          cmake -G "Visual Studio 17 2022" -A x64 -S . -B "build_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_64" -DCMAKE_PREFIX_PATH="$tesseract_install_64" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_PATH\scripts\buildsystems\vcpkg.cmake"
-          cmake -G "Visual Studio 17 2022" -A Win32 -S . -B "build_32" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_32" -DCMAKE_PREFIX_PATH="$tesseract_install_32" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_PATH\scripts\buildsystems\vcpkg.cmake"
+          cmake -G "Visual Studio 17 2022" -A x64 -S . -B "build_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_64" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DLeptonica_DIR="$leptonica_install_64\lib\cmake\leptonica"
+          cmake -G "Visual Studio 17 2022" -A Win32 -S . -B "build_32" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_32" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DLeptonica_DIR="$leptonica_install_32\lib\cmake\leptonica"
 
           cmake --build build_64 --config Release --target install
           cmake --build build_32 --config Release --target install
 
+          cd ..
+
+          # ------ Package Artifacts ----------------------------------------
+          
+          $artifact_dir = "artifacts"
+          
+          ForEach ($platform_x64 in @($true, $false)) {
+              $bitness = if ($platform_x64) { "64" } else { "32" }
+          
+              # set paths based on platform
+              $tesseract_build = if ($platform_x64) { $tesseract_build_64 } else { $tesseract_build_32 }
+              $tesseract_install = if ($platform_x64) { $tesseract_install_64 } else { $tesseract_install_32 }
+              $leptonica_build = if ($platform_x64) { $leptonica_build_64 } else { $leptonica_build_32 }
+              $leptonica_install = if ($platform_x64) { $leptonica_install_64 } else { $leptonica_install_32 }
+          
+              $dest_bitness_dir = "$artifact_dir\${bitness}bit"
+              
+              # nested hashtable for paths
+              $paths = @{
+                  "tesseract" = @{
+                      "lib" = "$tesseract_build\Release";
+                      "bin" = "$tesseract_build\bin\Release";
+                      "include" = "$tesseract_install\include"
+                  };
+                  "leptonica" = @{
+                      "lib" = "$leptonica_build\src\Release";
+                      "bin" = "$leptonica_build\bin\Release";
+                      "include" = "$leptonica_install\include"
+                  }
+              }
+          
+              foreach ($component in $paths.Keys) {
+                  foreach ($type in $paths[$component].Keys) {
+                      $target_dir = "$dest_bitness_dir\$type"
+                      $source_path = $paths[$component][$type]
+                      New-Item -Path $target_dir -ItemType Directory -Force
+                      Copy-Item -Path "$source_path\*" -Destination $target_dir -Recurse -Force
+                  }
+              }
+          }
+          
+          # zip the organized binaries and header files
+          $zip_path = "tesseract_leptonica_binaries_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
+          Compress-Archive -Path "$artifact_dir\*" -DestinationPath $zip_path
+
+    artifacts:
+      - path: tesseract_leptonica_binaries_*.zip
+        name: archive
+          
+  - matrix:
+      only:
+        - job_group: Build Wheels
+
+    build_script:
+      - pwsh: |
+          # ------ Download Dependencies ----------------------------------------
+          
+          # call AppVeyor api to get the id of the 'Build Dependencies' job corresponding to this job's Tesseract version
+          $request = Invoke-WebRequest -Uri "https://ci.appveyor.com/api/projects/simonflueckiger/tesserocr-windows-build/build/$env:APPVEYOR_BUILD_VERSION" -Method:Get -ContentType "application/xml"
+          $job_suffix = ($env:APPVEYOR_JOB_NAME -split " ")[-1]
+          $job = ([xml]$request.Content).ProjectBuildResults.Build.Jobs.BuildJobModel | Where-Object Name -match "Build Dependencies.*$job_suffix"
+
+          # piece together the dependencies zip artifact url from 'Build Dependencies' job
+          $url = "https://ci.appveyor.com/api/buildjobs/" + $job.JobId + "/artifacts/tesseract_leptonica_binaries_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
+
+          # download and unpack the archive
+          Invoke-WebRequest $url -OutFile dependencies.zip
+          Expand-Archive -Path dependencies.zip
+
+          $dep_bin_64 = Join-Path -Path $PWD -ChildPath "dependencies\64bit\bin"
+          $dep_bin_32 = Join-Path -Path $PWD -ChildPath "dependencies\32bit\bin"
+          $dep_lib_64 = Join-Path -Path $PWD -ChildPath "dependencies\64bit\lib"
+          $dep_lib_32 = Join-Path -Path $PWD -ChildPath "dependencies\32bit\lib"
+          $dep_inc_64 = Join-Path -Path $PWD -ChildPath "dependencies\64bit\include"
+          $dep_inc_32 = Join-Path -Path $PWD -ChildPath "dependencies\32bit\include"
+
+          $env:TESSERACT_VERSION = & "$dep_bin_64\tesseract.exe" --version | Select-String -Pattern "tesseract (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -First 1
+
+          # ------ Prepare tesserocr ----------------------------------------
+          
+          # pull tesserocr submodule
+          git submodule update --init --recursive
+
+          # copy files into newly pulled submodule
+          Copy-Item -Path "res\setup.py" -Destination "tesserocr"
+          Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
+          Copy-Item -Path "res\image_dataset" -Destination "tesserocr\tests\image_dataset" -Recurse
+          
+          # apply tesserocr patches
+          cd tesserocr
+          
+          $patch_directory = "..\res\patches\tesserocr"
+
+          $patch_files = @(
+              # addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
+              # addresses this PR for Pillow not being installed https://github.com/sirfz/tesserocr/pull/341
+              # also tests whether leptonica can correctly use all image libraries
+              "test_api.patch"
+          )
+
+          Foreach ($patch_file in $patch_files)
+          {
+              $full_path = Join-Path -Path $patch_directory -ChildPath $patch_file
+              "applying ""$full_path"""
+              git apply "$full_path"
+          }
+          
           cd ..
 
           # ------ Build tesserocr ----------------------------------------
@@ -153,66 +278,118 @@ for:
           # for each {64bit and 32bit} x {Python Versions}
           ForEach ($platform_x64 in @($true, $false)) {
               ForEach ($py_ver in $env:PYTHON_VERSIONS -split ", ") {
+                  $py_ver_dot = $py_ver[0] + "." + $py_ver.Substring(1)
                   
                   # set platform/python-version specific variables
                   # BUILD_PLATFORM and TESSERACT_VERSION are used in setup.py
                   if ($platform_x64) {
                       $env:BUILD_PLATFORM = "x64"
-                      $env:TESSERACT_INSTALL_PATH = $tesseract_install_64
-                      $env:Path = "C:\Python$py_ver-x64;" + $env:Path
+                      $python_path = "C:\Python$py_ver-x64"
+                      $conda_path = "C:\Miniconda3-x64"
+                      $env:INCLUDE_PATHS = "$dep_inc_64"
+                      $env:LIB_PATHS = "$dep_lib_64"
+                      $env:DLL_PATHS = "$dep_bin_64"
                   } else {
                       $env:BUILD_PLATFORM = "x86"
-                      $env:TESSERACT_INSTALL_PATH = $tesseract_install_32
-                      $env:Path = "C:\Python$py_ver;" + $env:Path
+                      $python_path = "C:\Python$py_ver"
+                      $conda_path = "C:\Miniconda3"
+                      $env:INCLUDE_PATHS = "$dep_inc_32"
+                      $env:LIB_PATHS = "$dep_lib_32"
+                      $env:DLL_PATHS = "$dep_bin_32"
                   }
+
+                  # use miniconda if python version not found on agent
+                  if (Test-Path $python_path) {
+                      $env:Path = "$python_path;" + $env:Path
+                  } else {
+                      (& "$conda_path\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
+                      conda create -y --name py$py_ver python=$py_ver_dot
+                      conda activate py$py_ver
+                  }
+
+                  "Building for Python $py_ver-$env:BUILD_PLATFORM"
+
+                  # upgrade pip
+                  python -m pip install --upgrade pip
                   
                   # install requirements
-                  python -m pip install --no-warn-script-location --no-input -r requirements-dev.txt
+                  python -m pip install --no-warn-script-location --no-input --only-binary :all: -r requirements-dev.txt
                   
                   # build wheel
                   python setup.py bdist_wheel
+
+                  # deactivate conda (not sure if really necessary)
+                  conda deactivate
               }
           }
 
-          # create archive for convenience
-          $env:TESSERACT_VERSION | Out-File -FilePath tesseract_version.txt
-          $zip_name = "wheels_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
-          Compress-Archive -Path dist\*.whl, tesseract_version.txt -DestinationPath dist\$zip_name
-
     test_script:
-      - pwsh: |      
+      - pwsh: | 
           # test suite needs TESSDATA_PREFIX to point to a valid tessdata location 
           $env:TESSDATA_PREFIX = "$PWD\res\tessdata"
 
           # for each {64bit and 32bit} x {Python Versions}
           ForEach ($platform_x64 in @($true, $false)) {
               ForEach ($py_ver in $env:PYTHON_VERSIONS -split ", ") {
+                  $py_ver_dot = $py_ver[0] + "." + $py_ver.Substring(1)
                   
                   # set platform/python-version specific variables
                   if ($platform_x64) {
-                      $env:Path = "C:\Python$py_ver-x64;" + $env:Path
+                      $python_path = "C:\Python$py_ver-x64"
+                      $conda_path = "C:\Miniconda3-x64"
                       $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*amd64*.whl
                   } else {
-                      $env:Path = "C:\Python$py_ver;" + $env:Path
+                      $python_path = "C:\Python$py_ver"
+                      $conda_path = "C:\Miniconda3"
                       $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*win32*.whl
+                  }
+
+                  # use miniconda if python version not found on agent
+                  if (Test-Path $python_path) {
+                      $env:Path = "$python_path;" + $env:Path
+                  } else {
+                      (& "$conda_path\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
+                      conda activate py$py_ver
                   }
                   
                   # install previously built wheels
                   python -m pip install $wheel_path
+
+                  # append python version and tesseract version string to file
+                  python -c "import platform; print(f'------ Python {platform.python_version()} ({platform.architecture()[0]}) ------')" >> versions.txt
+                  python -c "import tesserocr; print(tesserocr.tesseract_version()); print()" >> versions.txt
                   
                   # execute test suite
                   python tesserocr\tests\test_api.py
                   
                   # throw immediately if not all test passed
                   if ($LastExitCode -ne 0) { exit $LastExitCode }
+                  
+                  # uninstall pillow and execute test suite again for tests which require pillow to not be present
+                  python -m pip uninstall --yes Pillow
+                  
+                  # execute test suite
+                  python tesserocr\tests\test_api.py
+                  
+                  # throw immediately if not all test passed
+                  if ($LastExitCode -ne 0) { exit $LastExitCode }
+
+                  # deactivate conda (not sure if really necessary)
+                  conda deactivate
               }
           }
+
+          # create archive for convenience
+          $zip_name = "wheels_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
+          Compress-Archive -Path tesserocr\dist\*.whl, versions.txt -DestinationPath tesserocr\dist\$zip_name
 
     artifacts:
       - path: tesserocr\dist\*.whl
         name: wheel
       - path: tesserocr\dist\wheels_*.zip
         name: archive
+      - path: versions.txt
+        name: versions
 
   - matrix:
       only:
@@ -220,13 +397,6 @@ for:
 
     build_script:
       - pwsh: |
-          $conda_skip_python_versions_64 = $env:CONDA_SKIP_PYTHON_VERSIONS_64 -split ", "
-          $conda_skip_python_versions_32 = $env:CONDA_SKIP_PYTHON_VERSIONS_32 -split ", "
-          
-          # create necessary directories
-          New-Item conda_build -ItemType Directory
-          New-Item tesserocr\dist -ItemType Directory
-
           # call AppVeyor api to get the id of the 'Build Wheels' job corresponding to this job's Tesseract version
           $request = Invoke-WebRequest -Uri "https://ci.appveyor.com/api/projects/simonflueckiger/tesserocr-windows-build/build/$env:APPVEYOR_BUILD_VERSION" -Method:Get -ContentType "application/xml"
           $job_suffix = ($env:APPVEYOR_JOB_NAME -split " ")[-1]
@@ -237,88 +407,35 @@ for:
 
           # download and unpack the archive
           Invoke-WebRequest $url -OutFile wheels.zip
-          Expand-Archive -Path wheels.zip -DestinationPath tesserocr\dist
+          Expand-Archive -Path wheels.zip
 
           # create dictionary from downloaded wheel files $packages = @{wheel; py_ver; py_ver_str; platform_x64}
-          $wheels = Get-ChildItem tesserocr\dist -Filter *.whl
+          $wheels = Get-ChildItem wheels -Filter *.whl
           $packages = @()
           ForEach($wheel in $wheels) {
               $match_found = $wheel.Name -match 'tesserocr-\d+\.\d+\.\d+-cp(\d+).*(?:win(32)|amd(64)).*\.whl'
               $packages += @{ wheel = $wheel; py_ver = $Matches[1].Insert(1,'.'); py_ver_str = $Matches[1]; platform_x64 = if ($Matches[3] -eq "64") { $true } else { $false } }
           }
-          
+
           # get Tesseract version from file
-          $env:TESSERACT_VERSION = Get-Content -Path tesserocr\dist\tesseract_version.txt -TotalCount 1
+          $env:TESSERACT_VERSION = Get-Content -Path wheels\versions.txt | Select-String -Pattern "tesseract (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -First 1
 
-          ForEach ($platform_x64 in @($true, $false)) {
-              # properly activates conda env for powershell w/o "conda init powershell" being called beforehand
-              # (which would require closing and re-opening of powershell session)
-              # this is necessary for creating and activating new environments
-              # any Miniconda version installed on AppVeyor could be used as long as we update it
-              if ($platform_x64) {
-                  # download and install miniconda 64bit
-                  $filename = "Miniconda3-py39_23.3.1-0-Windows-x86_64.exe"
-                  Invoke-WebRequest https://repo.anaconda.com/miniconda/$filename -OutFile $filename
-                  Start-Process -FilePath $filename -ArgumentList "/InstallationType=JustMe", "/RegisterPython=0", "/S", "/D=$env:UserProfile\Miniconda3-x64" -Wait -NoNewWindow
-                  (& "$env:UserProfile\Miniconda3-x64\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
-                  
-                  # we want the latest conda to build for the most recent python version 
-                  # (since more recent Miniconda versions like Miniconda310 are not yet installed on this AppVeyor image)
-                  # conda version >= 23.5.0 is required (only attainable with miniconda >= 3.8) for conda-build on python 3.11,
-                  # using "conda update -y -n base -c defaults conda" doesn't work if installed version too far behind
-                  conda install -y -n base -c defaults conda=23.5.0
-              } else { 
-                  # download and install miniconda 32bit
-                  $filename = "Miniconda3-py39_4.12.0-Windows-x86.exe"
-                  Invoke-WebRequest https://repo.anaconda.com/miniconda/$filename -OutFile $filename
-                  Start-Process -FilePath $filename -ArgumentList "/InstallationType=JustMe", "/RegisterPython=0", "/S", "/D=$env:UserProfile\Miniconda3" -Wait -NoNewWindow
-                  (& "$env:UserProfile\Miniconda3\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
-                  
-                  # we want the latest conda to build for the most recent python version
-                  # 32bit version is stuck at v4.x
-                  conda update -y -n base -c defaults conda
-              }
-              
-              $conda_skip_python_versions = if ($platform_x64) { $conda_skip_python_versions_64 } else { $conda_skip_python_versions_32 }
+          # create package output directories
+          $conda_package_folder_64 = "conda_packages\win-64"
+          $conda_package_folder_32 = "conda_packages\win-32"
+          New-Item $conda_package_folder_64 -ItemType Directory
+          New-Item $conda_package_folder_32 -ItemType Directory
 
-              ForEach ($package in $packages) {
-                  if ($conda_skip_python_versions.Contains($package.py_ver_str)) { Continue }
-              
-                  # first do all x64 then all x86 packages
-                  if ($package.platform_x64 -ne $platform_x64) { Continue }
-                  
-                  $package_name = $package.wheel.Name
-                  $py_ver_str = $package.py_ver_str
-                  $py_ver = $package.py_ver
-                  
-                  # create and activate new conda environment with specified python version
-                  conda create -y --name py$py_ver_str python=$py_ver
-                  conda activate py$py_ver_str
-                  
-                  # install requirements
-                  conda install -y conda-build
-                  
-                  # create unique folder and call "conda_setup_build_env.py" to generate meta.yaml and bld.bat for this specific package 
-                  if ($platform_x64) { $conda_folder = "conda_py" + $py_ver_str + "_x64" } else { $conda_folder = "conda_py" + $py_ver_str + "_x86" }
-                  New-Item $conda_folder -ItemType Directory
-                  python res\conda_setup_build_env.py "$PWD\tesserocr\dist\$package_name" $env:TESSERACT_VERSION $conda_folder
-                  
-                  # finally invoke "conda build"
-                  conda build $conda_folder --output-folder conda_build --python $py_ver --no-include-recipe --no-anaconda-upload --old-build-string
-              }
-              
-              # deactivate (not sure if really necessary)
-              conda deactivate
+          # convert wheels to conda packages
+          ForEach ($package in $packages) {
+              $package_name = $package.wheel.Name
+              $conda_package_folder = if ($package.platform_x64) { $conda_package_folder_64 } else { $conda_package_folder_32 }
+
+              python res\wheel_to_conda_converter.py "$PWD\wheels\$package_name" $env:TESSERACT_VERSION $conda_package_folder
           }
 
           # create archive for convenience
-          # x64 / x86 packages will be stored in win-64 / win-32 subfolders respectively
           # call "python upload_to_anaconda.py <path\to\conda_packages" to upload all packages to anaconda
-          New-Item conda_packages\win-64 -ItemType Directory
-          New-Item conda_packages\win-32 -ItemType Directory
-          Copy-Item -Path conda_build\win-64\tesserocr*.tar.bz2 -Destination conda_packages\win-64
-          Copy-Item -Path conda_build\win-32\tesserocr*.tar.bz2 -Destination conda_packages\win-32
-
           Compress-Archive -Path conda_packages/* -DestinationPath conda_packages.zip
 
     artifacts:
