@@ -11,7 +11,7 @@ You can download the wheel corresponding to your Python version from the [Releas
 pip install <package_name>.whl
 ```
 
-It's even more straightforward if you have conda installed ([currently conda-build doesn't support Python 3.11 32bit](https://github.com/conda/conda/issues/11170))
+It's even more straightforward if you have conda installed
 
 ```cmd
 conda install -c simonflueckiger tesserocr
