@@ -214,6 +214,7 @@ for:
 
     build_script:
       - pwsh: |
+          iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
           # ------ Download Dependencies ----------------------------------------
           
           # call AppVeyor api to get the id of the 'Build Dependencies' job corresponding to this job's Tesseract version
@@ -244,7 +245,7 @@ for:
 
           # copy files into newly pulled submodule
           Copy-Item -Path "res\setup.py" -Destination "tesserocr"
-          Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
+          #Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
           Copy-Item -Path "res\image_dataset" -Destination "tesserocr\tests\image_dataset" -Recurse
           
           # apply tesserocr patches
