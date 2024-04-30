@@ -214,7 +214,7 @@ for:
 
     build_script:
       - pwsh: |
-          $env:TESSERACT_VERSION = & "$dep_bin_64\tesseract.exe" --version | Select-String -Pattern "tesseract (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -First 1
+          $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
           # ------ Download Dependencies ----------------------------------------
           
           # call AppVeyor api to get the id of the 'Build Dependencies' job corresponding to this job's Tesseract version
@@ -236,6 +236,8 @@ for:
           $dep_inc_64 = Join-Path -Path $PWD -ChildPath "dependencies\64bit\include"
           $dep_inc_32 = Join-Path -Path $PWD -ChildPath "dependencies\32bit\include"
 
+          $env:TESSERACT_VERSION = & "$dep_bin_64\tesseract.exe" --version | Select-String -Pattern "tesseract (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -First 1
+
           # ------ Prepare tesserocr ----------------------------------------
           
           # pull tesserocr submodule
@@ -245,8 +247,6 @@ for:
           Copy-Item -Path "res\setup.py" -Destination "tesserocr"
           #Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
           Copy-Item -Path "res\image_dataset" -Destination "tesserocr\tests\image_dataset" -Recurse
-
-          $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
           
           # apply tesserocr patches
           cd tesserocr
