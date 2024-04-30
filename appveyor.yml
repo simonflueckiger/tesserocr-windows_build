@@ -16,10 +16,10 @@ environment:
   matrix:
     # ------ Tesseract 3.x ----------------------------------------
     
-    - job_name: Build Dependencies - Tesseract 3.x
-      job_group: Build Dependencies
-      LEPTONICA_COMMIT_ID: f413826 # Leptonica 1.82.0
-      TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
+    #- job_name: Build Dependencies - Tesseract 3.x
+    #  job_group: Build Dependencies
+    #  LEPTONICA_COMMIT_ID: f413826 # Leptonica 1.82.0
+    #  TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
     
     - job_name: Build Wheels - Tesseract 3.x
       job_group: Build Wheels
@@ -214,7 +214,7 @@ for:
 
     build_script:
       - pwsh: |
-          $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+          $env:TESSERACT_VERSION = & "$dep_bin_64\tesseract.exe" --version | Select-String -Pattern "tesseract (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -First 1
           # ------ Download Dependencies ----------------------------------------
           
           # call AppVeyor api to get the id of the 'Build Dependencies' job corresponding to this job's Tesseract version
@@ -236,8 +236,6 @@ for:
           $dep_inc_64 = Join-Path -Path $PWD -ChildPath "dependencies\64bit\include"
           $dep_inc_32 = Join-Path -Path $PWD -ChildPath "dependencies\32bit\include"
 
-          $env:TESSERACT_VERSION = & "$dep_bin_64\tesseract.exe" --version | Select-String -Pattern "tesseract (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value } | Select-Object -First 1
-
           # ------ Prepare tesserocr ----------------------------------------
           
           # pull tesserocr submodule
@@ -247,6 +245,8 @@ for:
           Copy-Item -Path "res\setup.py" -Destination "tesserocr"
           #Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
           Copy-Item -Path "res\image_dataset" -Destination "tesserocr\tests\image_dataset" -Recurse
+
+          $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
           
           # apply tesserocr patches
           cd tesserocr
