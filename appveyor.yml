@@ -243,7 +243,6 @@ for:
           git submodule update --init --recursive
 
           # copy files into newly pulled submodule
-          Copy-Item -Path "res\setup.py" -Destination "tesserocr"
           Copy-Item -Path "res\image_dataset" -Destination "tesserocr\tests\image_dataset" -Recurse
           
           # apply tesserocr patches
