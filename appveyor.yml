@@ -286,19 +286,23 @@ for:
                       $env:BUILD_PLATFORM = "x64"
                       $python_path = "C:\Python$py_ver-x64"
                       $conda_path = "C:\Miniconda3-x64"
-                      $dll_search_path = "$dep_bin_64"
+                      $dep_bin = "$dep_bin_64"
                       $env:INCLUDE = "$dep_inc_64"
                       $env:LIBPATH = "$dep_lib_64"
                   } else {
                       $env:BUILD_PLATFORM = "x86"
                       $python_path = "C:\Python$py_ver"
                       $conda_path = "C:\Miniconda3"
-                      $dll_search_path = "$dep_bin_32"
+                      $dep_bin = "$dep_bin_32"
                       $env:INCLUDE = "$dep_inc_32"
                       $env:LIBPATH = "$dep_lib_32"
                   }
-                  
-                  $env:DLLPATHS = python ..\res\find_libraries_and_dependencies.py --libraries tesseract --search-paths "$dll_search_path"
+
+                  # collect dll path of tesseract and all other dlls it points to inside $dep_bin
+                  $env:DLLPATHS = python ..\res\find_libraries_and_dependencies.py --libraries tesseract --search-paths "$dep_bin"
+
+                  # tesseract.exe required for determining tesseract version in setup.py
+                  $env:Path = "$dep_bin;" + $env:Path
 
                   # use miniconda if python version not found on agent
                   if (Test-Path $python_path) {
