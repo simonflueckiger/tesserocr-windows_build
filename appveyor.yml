@@ -365,8 +365,8 @@ for:
                   python -c "import platform; print(f'------ Python {platform.python_version()} ({platform.architecture()[0]}) ------')" >> versions.txt
                   python -c "import tesserocr; print(tesserocr.tesseract_version()); print()" >> versions.txt
                   
-                  # execute test suite
-                  python tesserocr\tests\test_api.py
+                  # execute test suite (verbose output)
+                  python -m unittest -v tesserocr\tests\test_api.py
                   
                   # throw immediately if not all test passed
                   if ($LastExitCode -ne 0) { exit $LastExitCode }
@@ -374,8 +374,8 @@ for:
                   # uninstall pillow and execute test suite again for tests which require pillow to not be present
                   python -m pip uninstall --yes Pillow
                   
-                  # execute test suite
-                  python tesserocr\tests\test_api.py
+                  # execute test suite again (verbose output)
+                  python -m unittest -v tesserocr\tests\test_api.py
                   
                   # throw immediately if not all test passed
                   if ($LastExitCode -ne 0) { exit $LastExitCode }
