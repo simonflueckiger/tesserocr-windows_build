@@ -1,0 +1,61 @@
+diff --git a/setup.py b/setup.py
+index f7a1c46..2945e59 100644
+--- a/setup.py
++++ b/setup.py
+@@ -7,6 +7,7 @@ import os
+ import re
+ import subprocess
+ import sys
++import shutil
+ from os.path import abspath, dirname
+ from os.path import join as pjoin
+ from os.path import split as psplit
+@@ -24,6 +25,7 @@ _LOGGER.addHandler(logging.StreamHandler(sys.stderr))
+ 
+ _TESSERACT_MIN_VERSION = "3.04.00"
+ _CYTHON_COMPILE_TIME_ENV = None
++_DLL_PATHS = []
+ 
+ # find_version from pip https://github.com/pypa/pip/blob/1.5.6/setup.py#L33
+ here = abspath(dirname(__file__))
+@@ -192,6 +194,12 @@ def get_tesseract_version():
+         "TESSERACT_VERSION": version_to_int(version),
+     }
+     if sys.platform == "win32":
++        dllpaths = os.getenv("DLLPATHS", None)
++        if dllpaths:
++            dllpaths = list(filter(None, dllpaths.split(";")))
++        else:
++            dllpaths = []
++
+         libpaths = os.getenv("LIBPATH", None)
+         if libpaths:
+             libpaths = list(filter(None, libpaths.split(";")))
+@@ -225,6 +233,7 @@ def get_tesseract_version():
+         else:
+             includepaths = []
+ 
++        config["dll_paths"] = dllpaths
+         config["libraries"] = [tess_lib, lept_lib]
+         config["library_dirs"] = libpaths
+         config["include_dirs"] = includepaths
+@@ -253,6 +262,7 @@ def make_extension():
+     global _CYTHON_COMPILE_TIME_ENV
+     build_args = get_build_args()
+     _CYTHON_COMPILE_TIME_ENV = build_args.pop("compile_time_env")
++    _DLL_PATHS.extend(build_args.pop("dll_paths"))
+     return Extension("tesserocr.tesserocr", sources=["tesserocr/tesserocr.pyx"], language="c++", **build_args)
+ 
+ 
+@@ -275,6 +285,11 @@ class my_build_ext(build_ext, object):
+                 _LOGGER.debug("tesseract >= 03.05.02 requires c++11 compiler support")
+                 extension.extra_compile_args = extra_args
+ 
++            # copy dlls to the build directory
++            dll_dest_dir = os.path.dirname(self.get_ext_fullpath(extension.name))
++            for dll_path in _DLL_PATHS:
++                shutil.copy(dll_path, dll_dest_dir)
++
+         build_ext.build_extensions(self)
+ 
+     def finalize_options(self):

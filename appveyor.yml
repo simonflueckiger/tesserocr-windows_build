@@ -214,7 +214,6 @@ for:
 
     build_script:
       - pwsh: |
-          $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
           # ------ Download Dependencies ----------------------------------------
           
           # call AppVeyor api to get the id of the 'Build Dependencies' job corresponding to this job's Tesseract version
@@ -245,7 +244,6 @@ for:
 
           # copy files into newly pulled submodule
           Copy-Item -Path "res\setup.py" -Destination "tesserocr"
-          #Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
           Copy-Item -Path "res\image_dataset" -Destination "tesserocr\tests\image_dataset" -Recurse
           
           # apply tesserocr patches
@@ -255,9 +253,11 @@ for:
 
           $patch_files = @(
               # addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
-              # addresses this PR for Pillow not being installed https://github.com/sirfz/tesserocr/pull/341
               # also tests whether leptonica can correctly use all image libraries
-              "test_api.patch"
+              "test_api.patch",
+              
+              # adds functionality to copy dlls to the build directory
+              "setup.patch"
           )
 
           Foreach ($patch_file in $patch_files)
@@ -273,7 +273,7 @@ for:
 
           cd tesserocr
           
-          # dumpbin.exe required for finding dependencies in setup.py
+          # dumpbin.exe required for finding dependencies in find_libraries_and_dependencies.py
           $env:Path = "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin;" + $env:Path
 
           # for each {64bit and 32bit} x {Python Versions}
@@ -287,17 +287,19 @@ for:
                       $env:BUILD_PLATFORM = "x64"
                       $python_path = "C:\Python$py_ver-x64"
                       $conda_path = "C:\Miniconda3-x64"
-                      $env:INCLUDE_PATHS = "$dep_inc_64"
-                      $env:LIB_PATHS = "$dep_lib_64"
-                      $env:DLL_PATHS = "$dep_bin_64"
+                      $dll_search_path = "$dep_bin_64"
+                      $env:INCLUDE = "$dep_inc_64"
+                      $env:LIBPATH = "$dep_lib_64"
                   } else {
                       $env:BUILD_PLATFORM = "x86"
                       $python_path = "C:\Python$py_ver"
                       $conda_path = "C:\Miniconda3"
-                      $env:INCLUDE_PATHS = "$dep_inc_32"
-                      $env:LIB_PATHS = "$dep_lib_32"
-                      $env:DLL_PATHS = "$dep_bin_32"
+                      $dll_search_path = "$dep_bin_32"
+                      $env:INCLUDE = "$dep_inc_32"
+                      $env:LIBPATH = "$dep_lib_32"
                   }
+                  
+                  $env:DLLPATHS = python ..\res\find_libraries_and_dependencies.py --libraries tesseract --search-paths "$dll_search_path"
 
                   # use miniconda if python version not found on agent
                   if (Test-Path $python_path) {
