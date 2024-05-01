@@ -364,9 +364,12 @@ for:
                   # append python version and tesseract version string to file
                   python -c "import platform; print(f'------ Python {platform.python_version()} ({platform.architecture()[0]}) ------')" >> versions.txt
                   python -c "import tesserocr; print(tesserocr.tesseract_version()); print()" >> versions.txt
+
+                  # https://stackoverflow.com/a/73984985/1786159
+                  cd tesserocr\tests
                   
                   # execute test suite (verbose output)
-                  python -m unittest -v tesserocr\tests\test_api.py
+                  python -m unittest -v test_api.py
                   
                   # throw immediately if not all test passed
                   if ($LastExitCode -ne 0) { exit $LastExitCode }
@@ -375,13 +378,15 @@ for:
                   python -m pip uninstall --yes Pillow
                   
                   # execute test suite again (verbose output)
-                  python -m unittest -v tesserocr\tests\test_api.py
+                  python -m unittest -v test_api.py
                   
                   # throw immediately if not all test passed
                   if ($LastExitCode -ne 0) { exit $LastExitCode }
 
                   # deactivate conda (not sure if really necessary)
                   conda deactivate
+
+                  cd ..\..
               }
           }
 
