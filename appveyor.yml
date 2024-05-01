@@ -1,4 +1,4 @@
-version: 2.6.2.{build}
+version: 2.7.0.{build}
 image: Visual Studio 2022
 
 # NOTE 2024-03-13: Tesseract 3.x and 4.x seem to be only compatible with leptonica .so version <= 5.x (<= v1.82)
@@ -243,8 +243,6 @@ for:
           git submodule update --init --recursive
 
           # copy files into newly pulled submodule
-          Copy-Item -Path "res\setup.py" -Destination "tesserocr"
-          Copy-Item -Path "res\tesserocr" -Destination "tesserocr" -Recurse
           Copy-Item -Path "res\image_dataset" -Destination "tesserocr\tests\image_dataset" -Recurse
           
           # apply tesserocr patches
@@ -254,9 +252,11 @@ for:
 
           $patch_files = @(
               # addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
-              # addresses this PR for Pillow not being installed https://github.com/sirfz/tesserocr/pull/341
               # also tests whether leptonica can correctly use all image libraries
-              "test_api.patch"
+              "test_api.patch",
+              
+              # adds functionality to copy dlls to the build directory
+              "setup.patch"
           )
 
           Foreach ($patch_file in $patch_files)
@@ -272,7 +272,7 @@ for:
 
           cd tesserocr
           
-          # dumpbin.exe required for finding dependencies in setup.py
+          # dumpbin.exe required for finding dependencies in find_libraries_and_dependencies.py
           $env:Path = "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin;" + $env:Path
 
           # for each {64bit and 32bit} x {Python Versions}
@@ -286,17 +286,23 @@ for:
                       $env:BUILD_PLATFORM = "x64"
                       $python_path = "C:\Python$py_ver-x64"
                       $conda_path = "C:\Miniconda3-x64"
-                      $env:INCLUDE_PATHS = "$dep_inc_64"
-                      $env:LIB_PATHS = "$dep_lib_64"
-                      $env:DLL_PATHS = "$dep_bin_64"
+                      $dep_bin = "$dep_bin_64"
+                      $env:INCLUDE = "$dep_inc_64"
+                      $env:LIBPATH = "$dep_lib_64"
                   } else {
                       $env:BUILD_PLATFORM = "x86"
                       $python_path = "C:\Python$py_ver"
                       $conda_path = "C:\Miniconda3"
-                      $env:INCLUDE_PATHS = "$dep_inc_32"
-                      $env:LIB_PATHS = "$dep_lib_32"
-                      $env:DLL_PATHS = "$dep_bin_32"
+                      $dep_bin = "$dep_bin_32"
+                      $env:INCLUDE = "$dep_inc_32"
+                      $env:LIBPATH = "$dep_lib_32"
                   }
+
+                  # collect dll path of tesseract and all other dlls it points to inside $dep_bin
+                  $env:DLLPATHS = python ..\res\find_libraries_and_dependencies.py --libraries tesseract --search-paths "$dep_bin"
+
+                  # tesseract.exe required for determining tesseract version in setup.py
+                  $env:Path = "$dep_bin;" + $env:Path
 
                   # use miniconda if python version not found on agent
                   if (Test-Path $python_path) {
@@ -358,9 +364,12 @@ for:
                   # append python version and tesseract version string to file
                   python -c "import platform; print(f'------ Python {platform.python_version()} ({platform.architecture()[0]}) ------')" >> versions.txt
                   python -c "import tesserocr; print(tesserocr.tesseract_version()); print()" >> versions.txt
+
+                  # https://stackoverflow.com/a/73984985/1786159
+                  cd tesserocr\tests
                   
-                  # execute test suite
-                  python tesserocr\tests\test_api.py
+                  # execute test suite (verbose output)
+                  python -m unittest -v test_api.py
                   
                   # throw immediately if not all test passed
                   if ($LastExitCode -ne 0) { exit $LastExitCode }
@@ -368,14 +377,16 @@ for:
                   # uninstall pillow and execute test suite again for tests which require pillow to not be present
                   python -m pip uninstall --yes Pillow
                   
-                  # execute test suite
-                  python tesserocr\tests\test_api.py
+                  # execute test suite again (verbose output)
+                  python -m unittest -v test_api.py
                   
                   # throw immediately if not all test passed
                   if ($LastExitCode -ne 0) { exit $LastExitCode }
 
                   # deactivate conda (not sure if really necessary)
                   conda deactivate
+
+                  cd ..\..
               }
           }
 
@@ -435,11 +446,11 @@ for:
           }
 
           # create archive for convenience
-          # call "python upload_to_anaconda.py <path\to\conda_packages" to upload all packages to anaconda
+          # call "python upload_to_anaconda.py <path\to\conda_packages>" to upload all packages to anaconda
           Compress-Archive -Path conda_packages/* -DestinationPath conda_packages.zip
 
     artifacts:
-      - path: conda_build\win-*\tesserocr*.tar.bz2
+      - path: conda_packages\win-*\*.tar.bz2
         name: conda_package
       - path: conda_packages.zip
         name: archive
