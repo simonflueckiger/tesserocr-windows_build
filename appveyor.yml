@@ -441,11 +441,11 @@ for:
           }
 
           # create archive for convenience
-          # call "python upload_to_anaconda.py <path\to\conda_packages" to upload all packages to anaconda
+          # call "python upload_to_anaconda.py <path\to\conda_packages>" to upload all packages to anaconda
           Compress-Archive -Path conda_packages/* -DestinationPath conda_packages.zip
 
     artifacts:
-      - path: conda_build\win-*\tesserocr*.tar.bz2
+      - path: conda_packages\win-*\*.tar.bz2
         name: conda_package
       - path: conda_packages.zip
         name: archive
