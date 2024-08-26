@@ -1,4 +1,4 @@
-version: 2.7.0.{build}
+version: 2.7.1.{build}
 image: Visual Studio 2022
 
 # NOTE 2024-03-13: Tesseract 3.x and 4.x seem to be only compatible with leptonica .so version <= 5.x (<= v1.82)
