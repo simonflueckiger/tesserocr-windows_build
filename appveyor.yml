@@ -1,4 +1,4 @@
-version: 2.7.1.{build}
+version: 2.8.0.{build}
 image: Visual Studio 2022
 
 # NOTE 2024-03-13: Tesseract 3.x and 4.x seem to be only compatible with leptonica .so version <= 5.x (<= v1.82)
@@ -48,8 +48,8 @@ environment:
 
     - job_name: Build Dependencies - Tesseract 5.x
       job_group: Build Dependencies
-      LEPTONICA_COMMIT_ID: 7e803e7 # Leptonica 1.84.1
-      TESSERACT_COMMIT_ID: b5f279e # Tesseract 5.4.1
+      LEPTONICA_COMMIT_ID: 63aef18 # Leptonica 1.85.0
+      TESSERACT_COMMIT_ID: 64eab6c # Tesseract 5.5.0
 
     - job_name: Build Wheels - Tesseract 5.x
       job_group: Build Wheels
