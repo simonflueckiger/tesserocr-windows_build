@@ -1,0 +1,10 @@
+diff --git a/requirements-dev.txt b/requirements-dev.txt
+index d367fec..7cff0b8 100644
+--- a/requirements-dev.txt
++++ b/requirements-dev.txt
+@@ -1,4 +1,4 @@
+-setuptools
++setuptools>=69.0.0
+ Pillow
+ Cython>=0.23
+ wheel
