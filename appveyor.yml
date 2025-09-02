@@ -256,7 +256,12 @@ for:
               "test_api.patch",
               
               # adds functionality to copy dlls to the build directory
-              "setup.patch"
+              "setup.patch",
+
+              # setuptools only started to include type information by default with v69.0.0
+              # https://github.com/simonflueckiger/tesserocr-windows_build/issues/30
+              # https://setuptools.pypa.io/en/latest/userguide/miscellaneous.html
+              "requirements-dev.patch"
           )
 
           Foreach ($patch_file in $patch_files)
