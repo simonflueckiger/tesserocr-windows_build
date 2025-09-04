@@ -49,7 +49,7 @@ environment:
     - job_name: Build Dependencies - Tesseract 5.x
       job_group: Build Dependencies
       LEPTONICA_COMMIT_ID: 63aef18 # Leptonica 1.85.0
-      TESSERACT_COMMIT_ID: 64eab6c # Tesseract 5.5.0
+      TESSERACT_COMMIT_ID: 3b7c70e # Tesseract 5.5.1
 
     - job_name: Build Wheels - Tesseract 5.x
       job_group: Build Wheels
@@ -256,6 +256,7 @@ for:
               "test_api.patch",
               
               # adds functionality to copy dlls to the build directory
+              # and to copy typing stubs (.pyi files) to wheels on older setuptools versions
               "setup.patch"
           )
 
