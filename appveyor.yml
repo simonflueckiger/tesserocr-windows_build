@@ -256,6 +256,7 @@ for:
               "test_api.patch",
               
               # adds functionality to copy dlls to the build directory
+              # and to copy typing stubs (.pyi files) to wheels on older setuptools versions
               "setup.patch"
           )
 
