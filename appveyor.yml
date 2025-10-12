@@ -11,7 +11,7 @@ image: Visual Studio 2022
 #                  maybe check changes to TIFF_TEST https://github.com/tesseract-ocr/tesseract/commit/54b9fe4de9f0aa3af15f52a6f27ffaf758b43769
 
 environment:
-  PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311, 312, 313
+  PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311, 312, 313, 314
 
   matrix:
     # ------ Tesseract 3.x ----------------------------------------
