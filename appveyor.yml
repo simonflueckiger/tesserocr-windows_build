@@ -84,12 +84,11 @@ for:
   
           if ($use_legacy_cmake) {
             choco install cmake --version=3.29.6 -y --allow-downgrade
-            refreshenv
             $env:Path = "C:\Program Files\CMake\bin;$env:Path"
           }
 
           # show current cmake version
-          (cmakes = Get-Command cmake).Source | Write-Host
+          ($cmakes = Get-Command cmake).Source | Write-Host
           cmake --version
       
           # ------ Build Leptonica ----------------------------------------
