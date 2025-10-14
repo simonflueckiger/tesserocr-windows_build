@@ -20,6 +20,7 @@ environment:
       job_group: Build Dependencies
       LEPTONICA_COMMIT_ID: f413826 # Leptonica 1.82.0
       TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
+      USE_LEGACY_CMAKE: true
     
     - job_name: Build Wheels - Tesseract 3.x
       job_group: Build Wheels
@@ -35,6 +36,7 @@ environment:
       job_group: Build Dependencies
       LEPTONICA_COMMIT_ID: f413826 # Leptonica 1.82.0
       TESSERACT_COMMIT_ID: f38e7a7 # Tesseract 4.1.3
+      USE_LEGACY_CMAKE: true
 
     - job_name: Build Wheels - Tesseract 4.x
       job_group: Build Wheels
@@ -75,6 +77,21 @@ for:
 
     build_script:
       - pwsh: | 
+      
+          # ------ Install Legacy CMake for older builds ------------------
+          $use_legacy_cmake = $false
+          if ($env:USE_LEGACY_CMAKE) { $use_legacy_cmake = [bool]::Parse($env:USE_LEGACY_CMAKE) }
+  
+          if ($use_legacy_cmake) {
+            choco install cmake --version=3.29.6 -y --allow-downgrade
+            refreshenv
+            $env:Path = "C:\Program Files\CMake\bin;$env:Path"
+          }
+
+          # show current cmake version
+          (cmakes = Get-Command cmake).Source | Write-Host
+          cmake --version
+      
           # ------ Build Leptonica ----------------------------------------
 
           $leptonica_install_64 = Join-Path -Path $PWD -ChildPath "leptonica_install_64"
