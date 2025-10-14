@@ -79,6 +79,8 @@ for:
       - pwsh: | 
       
           # ------ Install Legacy CMake for older builds ------------------
+          # https://cmake.org/cmake/help/latest/release/4.0.html#deprecated-and-removed-features
+          # leptonica 1.82.0 and tesseract 3.x/4.x set the CMake policy version to something < 3.5
           $use_legacy_cmake = $false
           if ($env:USE_LEGACY_CMAKE) { $use_legacy_cmake = [bool]::Parse($env:USE_LEGACY_CMAKE) }
   
@@ -87,7 +89,7 @@ for:
             $env:Path = "C:\Program Files\CMake\bin;$env:Path"
           }
 
-          # show current cmake version
+          # show used cmake version
           ($cmakes = Get-Command cmake).Source | Write-Host
           cmake --version
       
