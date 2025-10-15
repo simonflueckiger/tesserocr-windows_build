@@ -78,6 +78,8 @@ for:
     build_script:
       - pwsh: | 
       
+          iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+      
           # ------ Install Legacy CMake for older builds ------------------
           # https://cmake.org/cmake/help/latest/release/4.0.html#deprecated-and-removed-features
           # leptonica 1.82.0 and tesseract 3.x/4.x set the CMake policy version to something < 3.5
