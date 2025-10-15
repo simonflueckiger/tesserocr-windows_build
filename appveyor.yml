@@ -78,7 +78,7 @@ for:
     build_script:
       - pwsh: | 
       
-          $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+          #$blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
       
           # ------ Install Legacy CMake for older builds ------------------
           # https://cmake.org/cmake/help/latest/release/4.0.html#deprecated-and-removed-features
@@ -234,6 +234,13 @@ for:
 
     build_script:
       - pwsh: |
+          # ------ Update Conda -------------------------------------------------
+          # https://github.com/PowerShell/PowerShell/issues/24942#issuecomment-2638032757
+          # update conda to 25.1.1 so it works nicely together with PowerShell 7.5.0+
+          # this also requires at least Python 3.9
+          & "C:\Miniconda3-x64\Scripts\conda.exe" install -n base -c defaults "conda>=25.1.1" "python>=3.9" -S -y
+          & "C:\Miniconda3\Scripts\conda.exe" install -n base -c defaults "conda>=25.1.1" "python>=3.9" -S -y
+      
           # ------ Download Dependencies ----------------------------------------
           
           # call AppVeyor api to get the id of the 'Build Dependencies' job corresponding to this job's Tesseract version
