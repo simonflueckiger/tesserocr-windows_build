@@ -78,7 +78,7 @@ for:
     build_script:
       - pwsh: | 
       
-          #$blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+          $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
       
           # ------ Install Legacy CMake for older builds ------------------
           # https://cmake.org/cmake/help/latest/release/4.0.html#deprecated-and-removed-features
