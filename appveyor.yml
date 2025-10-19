@@ -12,6 +12,9 @@ image: Visual Studio 2022
 
 environment:
   PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311, 312, 313, 314
+  LEGACY_CMAKE_VERSION: 3.29.6
+  CONDA_PATH: C:\Miniconda3-x64\Scripts\conda.exe
+  
 
   matrix:
     # ------ Tesseract 3.x ----------------------------------------
@@ -78,7 +81,7 @@ for:
     build_script:
       - pwsh: | 
       
-          $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+          #$blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
       
           # ------ Install Legacy CMake for older builds ------------------
           # https://cmake.org/cmake/help/latest/release/4.0.html#deprecated-and-removed-features
@@ -87,7 +90,7 @@ for:
           if ($env:USE_LEGACY_CMAKE) { $use_legacy_cmake = [bool]::Parse($env:USE_LEGACY_CMAKE) }
   
           if ($use_legacy_cmake) {
-            choco install cmake --version=3.29.6 -y --allow-downgrade
+            choco install cmake --version=env:LEGACY_CMAKE_VERSION -y --allow-downgrade
             $env:Path = "C:\Program Files\CMake\bin;$env:Path"
           }
 
@@ -234,12 +237,19 @@ for:
 
     build_script:
       - pwsh: |
+      
+          iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+      
           # ------ Update Conda -------------------------------------------------
+          
           # https://github.com/PowerShell/PowerShell/issues/24942#issuecomment-2638032757
           # update conda to 25.1.1 so it works nicely together with PowerShell 7.5.0+
           # this also requires at least Python 3.9
-          & "C:\Miniconda3-x64\Scripts\conda.exe" install -n base -c defaults "conda>=25.1.1" "python>=3.9" -S -y
-          & "C:\Miniconda3\Scripts\conda.exe" install -n base -c defaults "conda>=25.1.1" "python>=3.9" -S -y
+          & $env:CONDA_PATH install -n base "conda>=25.1.1" "python>=3.9" -S -y
+          
+          # reset channels to default (can be empty after update)
+          & $env:CONDA_PATH config --remove-key channels 2>$null
+          & $env:CONDA_PATH config --add channels defaults
       
           # ------ Download Dependencies ----------------------------------------
           
@@ -313,14 +323,12 @@ for:
                   if ($platform_x64) {
                       $env:BUILD_PLATFORM = "x64"
                       $python_path = "C:\Python$py_ver-x64"
-                      $conda_path = "C:\Miniconda3-x64"
                       $dep_bin = "$dep_bin_64"
                       $env:INCLUDE = "$dep_inc_64"
                       $env:LIBPATH = "$dep_lib_64"
                   } else {
                       $env:BUILD_PLATFORM = "x86"
                       $python_path = "C:\Python$py_ver"
-                      $conda_path = "C:\Miniconda3"
                       $dep_bin = "$dep_bin_32"
                       $env:INCLUDE = "$dep_inc_32"
                       $env:LIBPATH = "$dep_lib_32"
@@ -336,9 +344,18 @@ for:
                   if (Test-Path $python_path) {
                       $env:Path = "$python_path;" + $env:Path
                   } else {
-                      (& "$conda_path\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
-                      conda create -y --name py$py_ver python=$py_ver_dot
-                      conda activate py$py_ver
+                      # activate conda (base) env
+                      (& $env:CONDA_PATH "shell.powershell" "hook") | Out-String | Invoke-Expression
+                      
+                      if ($platform_x64) {
+                          conda create -y --name py$py_ver-64 "python=$py_ver_dot"
+                          conda activate py$py_ver-64
+                      } else {
+                          conda create -y --name py$py_ver-32 "python=$py_ver_dot" --subdir win-32
+                          conda activate py$py_ver-32
+                          # make sure future installs in this env stay 32-bit
+                          conda config --env --set subdir win-32
+                      }
                   }
 
                   "Building for Python $py_ver-$env:BUILD_PLATFORM"
@@ -370,11 +387,9 @@ for:
                   # set platform/python-version specific variables
                   if ($platform_x64) {
                       $python_path = "C:\Python$py_ver-x64"
-                      $conda_path = "C:\Miniconda3-x64"
                       $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*amd64*.whl
                   } else {
                       $python_path = "C:\Python$py_ver"
-                      $conda_path = "C:\Miniconda3"
                       $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*win32*.whl
                   }
 
@@ -382,8 +397,9 @@ for:
                   if (Test-Path $python_path) {
                       $env:Path = "$python_path;" + $env:Path
                   } else {
-                      (& "$conda_path\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
-                      conda activate py$py_ver
+                      (& $env:CONDA_PATH "shell.powershell" "hook") | Out-String | Invoke-Expression
+                      $archSuffix = if ($platform_x64) { '64' } else { '32' }
+                      conda activate py$py_ver-$archSuffix
                   }
                   
                   # install previously built wheels
