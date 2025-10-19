@@ -90,7 +90,7 @@ for:
           if ($env:USE_LEGACY_CMAKE) { $use_legacy_cmake = [bool]::Parse($env:USE_LEGACY_CMAKE) }
   
           if ($use_legacy_cmake) {
-            choco install cmake --version=env:LEGACY_CMAKE_VERSION -y --allow-downgrade
+            choco install cmake --version=$env:LEGACY_CMAKE_VERSION -y --allow-downgrade
             $env:Path = "C:\Program Files\CMake\bin;$env:Path"
           }
 
