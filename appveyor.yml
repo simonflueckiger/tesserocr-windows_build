@@ -81,7 +81,7 @@ for:
     build_script:
       - pwsh: | 
       
-          $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+          #$blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
       
           # ------ Install Legacy CMake for older builds ------------------
           # https://cmake.org/cmake/help/latest/release/4.0.html#deprecated-and-removed-features
@@ -239,6 +239,15 @@ for:
       - pwsh: |
       
           iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+          
+          # ------ Install Python 3.14 32-bit -----------------------------------
+          
+          # TODO 2025-10-26: installing Python 3.14 32-bit manually until either:
+          # - AppVeyor Visual Studio 2022 image includes Python 3.14 32-bit pre-installed, or
+          # - Python 3.14 32-bit becomes available on conda-forge/defaults channels
+          if (-not (Test-Path "C:\Python314")) {
+              choco install python --version=3.14.0 -y --params "/InstallDir:C:\Python314" --x86
+          }
       
           # ------ Update Conda -------------------------------------------------
           
