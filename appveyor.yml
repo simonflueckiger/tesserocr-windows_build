@@ -11,7 +11,7 @@ image: Visual Studio 2022
 #                  maybe check changes to TIFF_TEST https://github.com/tesseract-ocr/tesseract/commit/54b9fe4de9f0aa3af15f52a6f27ffaf758b43769
 
 environment:
-  PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311, 312, 313, 314
+  PYTHON_VERSIONS: 39, 310, 311, 312, 313, 314
   LEGACY_CMAKE_VERSION: 3.29.6
   CONDA_PATH: C:\Miniconda3-x64\Scripts\conda.exe
   
