@@ -365,6 +365,10 @@ for:
                           # make sure future installs in this env stay 32-bit
                           conda config --env --set subdir win-32
                       }
+                      
+                      # log envs and packages for debugging
+                      conda info --envs
+                      conda list
                   }
 
                   "Building for Python $py_ver-$env:BUILD_PLATFORM"
@@ -409,6 +413,10 @@ for:
                       (& $env:CONDA_PATH "shell.powershell" "hook") | Out-String | Invoke-Expression
                       $archSuffix = if ($platform_x64) { '64' } else { '32' }
                       conda activate py$py_ver-$archSuffix
+                      
+                      # log envs and packages for debugging
+                      conda info --envs
+                      conda list
                   }
                   
                   # install previously built wheels
