@@ -1,5 +1,5 @@
 diff --git a/setup.py b/setup.py
-index a1f4b81..d9c2be3 100644
+index a1f4b81..6c9ae77 100644
 --- a/setup.py
 +++ b/setup.py
 @@ -7,6 +7,7 @@ import os
@@ -59,7 +59,15 @@ index a1f4b81..d9c2be3 100644
          build_ext.build_extensions(self)
  
      def finalize_options(self):
-@@ -321,4 +336,8 @@ setup(
+@@ -294,7 +309,6 @@ setup(
+     author="Fayez Zouheiry",
+     author_email="iamfayez@gmail.com",
+     license="MIT",
+-    python_requires=">=3.9",
+     classifiers=[
+         "Development Status :: 5 - Production/Stable",
+         "Intended Audience :: Developers",
+@@ -321,4 +335,8 @@ setup(
      setup_requires=["Cython>=3.0.0,<3.2.0"],
      packages=["tesserocr"],
      package_dir={"tesserocr": "tesserocr"},
