@@ -1,5 +1,5 @@
 diff --git a/tests/test_api.py b/tests/test_api.py
-index 0953246..877cc95 100644
+index 6e13400..877cc95 100644
 --- a/tests/test_api.py
 +++ b/tests/test_api.py
 @@ -50,6 +50,34 @@ class TestTessBaseApi(unittest.TestCase):
@@ -37,6 +37,15 @@ index 0953246..877cc95 100644
      def setUp(self):
          if pil_installed:
              with open(self._image_file, "rb") as f:
+@@ -83,7 +111,7 @@ class TestTessBaseApi(unittest.TestCase):
+         self._api.End()
+         self._api.InitFull(configs=configs, variables=vars_)
+         # assert file_type from box.train and custom edges_childarea
+-        self.assertEqual(self._api.GetVariableAsString("file_type"), ".tif")
++        self.assertEqual(self._api.GetVariableAsString("file_type"), ".bl")
+         self.assertEqual(self._api.GetVariableAsString("edges_childarea"), "0.7")
+         # reset back to default
+         self._api.End()
 @@ -115,6 +143,17 @@ class TestTessBaseApi(unittest.TestCase):
          text2 = tesserocr.file_to_text(self._image_file)
          self.assertEqual(text, text2)
