@@ -242,12 +242,14 @@ for:
           
           # ------ Install Python 3.14 32-bit -----------------------------------
           
-          # TODO 2025-10-26: installing Python 3.14 32-bit manually until either:
+          # Note 2025-10-26: installing Python 3.14 32-bit manually until either:
           # - AppVeyor Visual Studio 2022 image includes Python 3.14 32-bit pre-installed, or
           # - Python 3.14 32-bit becomes available on conda-forge/defaults channels
-          if (-not (Test-Path "C:\Python314")) {
-              choco install python --version=3.14.0 -y --params "/InstallDir:C:\Python314" --x86
-          }
+          # Note 2025-11-08: added https://github.com/appveyor/ci/issues/3982#issuecomment-3503968989
+          # uncomment if ever becomes necessary again:
+          #if (-not (Test-Path "C:\Python314")) {
+          #    choco install python --version=3.14.0 -y --params "/InstallDir:C:\Python314" --x86
+          #}
       
           # ------ Update Conda -------------------------------------------------
           
@@ -349,10 +351,13 @@ for:
                   # tesseract.exe required for determining tesseract version in setup.py
                   $env:Path = "$dep_bin;" + $env:Path
 
-                  # use miniconda if python version not found on agent
+                  $usingConda = $false
+
+                  # use conda if python version not found on agent
                   if (Test-Path $python_path) {
                       $env:Path = "$python_path;" + $env:Path
                   } else {
+                      $usingConda = $true
                       # activate conda (base) env
                       (& $env:CONDA_PATH "shell.powershell" "hook") | Out-String | Invoke-Expression
                       
@@ -382,8 +387,10 @@ for:
                   # build wheel
                   python setup.py bdist_wheel
 
-                  # deactivate conda (not sure if really necessary)
-                  conda deactivate
+                  # deactivate conda (not sure if really necessary) only if we actually used it this iteration
+                  if ($usingConda) {
+                      conda deactivate
+                  }
               }
           }
 
@@ -405,11 +412,14 @@ for:
                       $python_path = "C:\Python$py_ver"
                       $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*win32*.whl
                   }
+                  
+                  $usingConda = $false
 
-                  # use miniconda if python version not found on agent
+                  # use conda if python version not found on agent
                   if (Test-Path $python_path) {
                       $env:Path = "$python_path;" + $env:Path
                   } else {
+                      $usingConda = $true
                       (& $env:CONDA_PATH "shell.powershell" "hook") | Out-String | Invoke-Expression
                       $archSuffix = if ($platform_x64) { '64' } else { '32' }
                       conda activate py$py_ver-$archSuffix
@@ -444,8 +454,10 @@ for:
                   # throw immediately if not all test passed
                   if ($LastExitCode -ne 0) { exit $LastExitCode }
 
-                  # deactivate conda (not sure if really necessary)
-                  conda deactivate
+                  # deactivate conda (not sure if really necessary) only if we actually used it this iteration
+                  if ($usingConda) {
+                      conda deactivate
+                  }
 
                   cd ..\..
               }
