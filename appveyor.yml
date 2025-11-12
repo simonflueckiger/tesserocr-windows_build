@@ -1,4 +1,4 @@
-version: 2.8.0.{build}
+version: 2.9.1.{build}
 image: Visual Studio 2022
 
 # NOTE 2024-03-13: Tesseract 3.x and 4.x seem to be only compatible with leptonica .so version <= 5.x (<= v1.82)
@@ -11,15 +11,20 @@ image: Visual Studio 2022
 #                  maybe check changes to TIFF_TEST https://github.com/tesseract-ocr/tesseract/commit/54b9fe4de9f0aa3af15f52a6f27ffaf758b43769
 
 environment:
-  PYTHON_VERSIONS: 36, 37, 38, 39, 310, 311, 312, 313
+  PYTHON_VERSIONS: 39, 310, 311, 312, 313, 314
+  LEGACY_CMAKE_VERSION: 3.29.6
+  CONDA_PATH: C:\Miniconda3-x64\Scripts\conda.exe
+  
 
   matrix:
+
     # ------ Tesseract 3.x ----------------------------------------
     
     - job_name: Build Dependencies - Tesseract 3.x
       job_group: Build Dependencies
       LEPTONICA_COMMIT_ID: f413826 # Leptonica 1.82.0
       TESSERACT_COMMIT_ID: 7e5f0d6 # Tesseract 3.05.02
+      USE_LEGACY_CMAKE: true
     
     - job_name: Build Wheels - Tesseract 3.x
       job_group: Build Wheels
@@ -35,6 +40,7 @@ environment:
       job_group: Build Dependencies
       LEPTONICA_COMMIT_ID: f413826 # Leptonica 1.82.0
       TESSERACT_COMMIT_ID: f38e7a7 # Tesseract 4.1.3
+      USE_LEGACY_CMAKE: true
 
     - job_name: Build Wheels - Tesseract 4.x
       job_group: Build Wheels
@@ -75,6 +81,22 @@ for:
 
     build_script:
       - pwsh: | 
+
+          # ------ Install Legacy CMake for older builds ------------------
+          # https://cmake.org/cmake/help/latest/release/4.0.html#deprecated-and-removed-features
+          # leptonica 1.82.0 and tesseract 3.x/4.x set the CMake policy version to something < 3.5
+          $use_legacy_cmake = $false
+          if ($env:USE_LEGACY_CMAKE) { $use_legacy_cmake = [bool]::Parse($env:USE_LEGACY_CMAKE) }
+  
+          if ($use_legacy_cmake) {
+            choco install cmake --version=$env:LEGACY_CMAKE_VERSION -y --allow-downgrade
+            $env:Path = "C:\Program Files\CMake\bin;$env:Path"
+          }
+
+          # show used cmake version
+          ($cmakes = Get-Command cmake).Source | Write-Host
+          cmake --version
+      
           # ------ Build Leptonica ----------------------------------------
 
           $leptonica_install_64 = Join-Path -Path $PWD -ChildPath "leptonica_install_64"
@@ -214,6 +236,29 @@ for:
 
     build_script:
       - pwsh: |
+
+          # ------ Install Python 3.14 32-bit -----------------------------------
+          
+          # Note 2025-10-26: installing Python 3.14 32-bit manually until either:
+          # - AppVeyor Visual Studio 2022 image includes Python 3.14 32-bit pre-installed, or
+          # - Python 3.14 32-bit becomes available on conda-forge/defaults channels
+          # Note 2025-11-08: added https://github.com/appveyor/ci/issues/3982#issuecomment-3503968989
+          # uncomment if ever becomes necessary again:
+          #if (-not (Test-Path "C:\Python314")) {
+          #    choco install python --version=3.14.0 -y --params "/InstallDir:C:\Python314" --x86
+          #}
+      
+          # ------ Update Conda -------------------------------------------------
+          
+          # https://github.com/PowerShell/PowerShell/issues/24942#issuecomment-2638032757
+          # update conda to 25.1.1 so it works nicely together with PowerShell 7.5.0+
+          # this also requires at least Python 3.9
+          & $env:CONDA_PATH install -n base "conda>=25.1.1" "python>=3.9" -S -y
+          
+          # reset channels to default (can be empty after update)
+          & $env:CONDA_PATH config --remove-key channels 2>$null
+          & $env:CONDA_PATH config --add channels defaults
+      
           # ------ Download Dependencies ----------------------------------------
           
           # call AppVeyor api to get the id of the 'Build Dependencies' job corresponding to this job's Tesseract version
@@ -251,8 +296,9 @@ for:
           $patch_directory = "..\res\patches\tesserocr"
 
           $patch_files = @(
-              # addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
-              # also tests whether leptonica can correctly use all image libraries
+              # - addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
+              # - tests whether leptonica can correctly use all image libraries
+              # - reverts https://github.com/sirfz/tesserocr/pull/364 (not sure why it was approved in the first place)
               "test_api.patch",
               
               # adds functionality to copy dlls to the build directory
@@ -286,14 +332,12 @@ for:
                   if ($platform_x64) {
                       $env:BUILD_PLATFORM = "x64"
                       $python_path = "C:\Python$py_ver-x64"
-                      $conda_path = "C:\Miniconda3-x64"
                       $dep_bin = "$dep_bin_64"
                       $env:INCLUDE = "$dep_inc_64"
                       $env:LIBPATH = "$dep_lib_64"
                   } else {
                       $env:BUILD_PLATFORM = "x86"
                       $python_path = "C:\Python$py_ver"
-                      $conda_path = "C:\Miniconda3"
                       $dep_bin = "$dep_bin_32"
                       $env:INCLUDE = "$dep_inc_32"
                       $env:LIBPATH = "$dep_lib_32"
@@ -305,13 +349,29 @@ for:
                   # tesseract.exe required for determining tesseract version in setup.py
                   $env:Path = "$dep_bin;" + $env:Path
 
-                  # use miniconda if python version not found on agent
+                  $usingConda = $false
+
+                  # use conda if python version not found on agent
                   if (Test-Path $python_path) {
                       $env:Path = "$python_path;" + $env:Path
                   } else {
-                      (& "$conda_path\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
-                      conda create -y --name py$py_ver python=$py_ver_dot
-                      conda activate py$py_ver
+                      $usingConda = $true
+                      # activate conda (base) env
+                      (& $env:CONDA_PATH "shell.powershell" "hook") | Out-String | Invoke-Expression
+                      
+                      if ($platform_x64) {
+                          conda create -y --name py$py_ver-64 "python=$py_ver_dot"
+                          conda activate py$py_ver-64
+                      } else {
+                          conda create -y --name py$py_ver-32 "python=$py_ver_dot" --subdir win-32
+                          conda activate py$py_ver-32
+                          # make sure future installs in this env stay 32-bit
+                          conda config --env --set subdir win-32
+                      }
+                      
+                      # log envs and packages for debugging
+                      conda info --envs
+                      conda list
                   }
 
                   "Building for Python $py_ver-$env:BUILD_PLATFORM"
@@ -325,13 +385,16 @@ for:
                   # build wheel
                   python setup.py bdist_wheel
 
-                  # deactivate conda (not sure if really necessary)
-                  conda deactivate
+                  # deactivate conda (not sure if really necessary) only if we actually used it this iteration
+                  if ($usingConda) {
+                      conda deactivate
+                  }
               }
           }
 
     test_script:
       - pwsh: | 
+
           # test suite needs TESSDATA_PREFIX to point to a valid tessdata location 
           $env:TESSDATA_PREFIX = "$PWD\res\tessdata"
 
@@ -343,20 +406,26 @@ for:
                   # set platform/python-version specific variables
                   if ($platform_x64) {
                       $python_path = "C:\Python$py_ver-x64"
-                      $conda_path = "C:\Miniconda3-x64"
                       $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*amd64*.whl
                   } else {
                       $python_path = "C:\Python$py_ver"
-                      $conda_path = "C:\Miniconda3"
                       $wheel_path = Get-ChildItem -Path tesserocr\dist\*cp$py_ver*win32*.whl
                   }
+                  
+                  $usingConda = $false
 
-                  # use miniconda if python version not found on agent
+                  # use conda if python version not found on agent
                   if (Test-Path $python_path) {
                       $env:Path = "$python_path;" + $env:Path
                   } else {
-                      (& "$conda_path\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | Invoke-Expression
-                      conda activate py$py_ver
+                      $usingConda = $true
+                      (& $env:CONDA_PATH "shell.powershell" "hook") | Out-String | Invoke-Expression
+                      $archSuffix = if ($platform_x64) { '64' } else { '32' }
+                      conda activate py$py_ver-$archSuffix
+                      
+                      # log envs and packages for debugging
+                      conda info --envs
+                      conda list
                   }
                   
                   # install previously built wheels
@@ -384,8 +453,10 @@ for:
                   # throw immediately if not all test passed
                   if ($LastExitCode -ne 0) { exit $LastExitCode }
 
-                  # deactivate conda (not sure if really necessary)
-                  conda deactivate
+                  # deactivate conda (not sure if really necessary) only if we actually used it this iteration
+                  if ($usingConda) {
+                      conda deactivate
+                  }
 
                   cd ..\..
               }
@@ -409,6 +480,7 @@ for:
 
     build_script:
       - pwsh: |
+
           # call AppVeyor api to get the id of the 'Build Wheels' job corresponding to this job's Tesseract version
           $request = Invoke-WebRequest -Uri "https://ci.appveyor.com/api/projects/simonflueckiger/tesserocr-windows-build/build/$env:APPVEYOR_BUILD_VERSION" -Method:Get -ContentType "application/xml"
           $job_suffix = ($env:APPVEYOR_JOB_NAME -split " ")[-1]
