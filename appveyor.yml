@@ -17,6 +17,7 @@ environment:
   
 
   matrix:
+
     # ------ Tesseract 3.x ----------------------------------------
     
     - job_name: Build Dependencies - Tesseract 3.x
@@ -80,9 +81,7 @@ for:
 
     build_script:
       - pwsh: | 
-      
-          #$blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-      
+
           # ------ Install Legacy CMake for older builds ------------------
           # https://cmake.org/cmake/help/latest/release/4.0.html#deprecated-and-removed-features
           # leptonica 1.82.0 and tesseract 3.x/4.x set the CMake policy version to something < 3.5
@@ -237,9 +236,7 @@ for:
 
     build_script:
       - pwsh: |
-      
-          iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-          
+
           # ------ Install Python 3.14 32-bit -----------------------------------
           
           # Note 2025-10-26: installing Python 3.14 32-bit manually until either:
@@ -254,7 +251,7 @@ for:
           # ------ Update Conda -------------------------------------------------
           
           # https://github.com/PowerShell/PowerShell/issues/24942#issuecomment-2638032757
-          # update conda to 25.1.1 so it works nicely together with PowerShell 7.5.0+
+          # update conda to 25.1.1 so it works nicely together with PowerShell 7.5.0+
           # this also requires at least Python 3.9
           & $env:CONDA_PATH install -n base "conda>=25.1.1" "python>=3.9" -S -y
           
@@ -299,8 +296,9 @@ for:
           $patch_directory = "..\res\patches\tesserocr"
 
           $patch_files = @(
-              # addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
-              # also tests whether leptonica can correctly use all image libraries
+              # - addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
+              # - tests whether leptonica can correctly use all image libraries
+              # - reverts https://github.com/sirfz/tesserocr/pull/364 (not sure why it was approved in the first place)
               "test_api.patch",
               
               # adds functionality to copy dlls to the build directory
@@ -396,6 +394,7 @@ for:
 
     test_script:
       - pwsh: | 
+
           # test suite needs TESSDATA_PREFIX to point to a valid tessdata location 
           $env:TESSDATA_PREFIX = "$PWD\res\tessdata"
 
@@ -481,6 +480,7 @@ for:
 
     build_script:
       - pwsh: |
+
           # call AppVeyor api to get the id of the 'Build Wheels' job corresponding to this job's Tesseract version
           $request = Invoke-WebRequest -Uri "https://ci.appveyor.com/api/projects/simonflueckiger/tesserocr-windows-build/build/$env:APPVEYOR_BUILD_VERSION" -Method:Get -ContentType "application/xml"
           $job_suffix = ($env:APPVEYOR_JOB_NAME -split " ")[-1]
