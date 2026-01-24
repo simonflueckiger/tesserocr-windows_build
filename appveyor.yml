@@ -320,7 +320,7 @@ for:
           cd tesserocr
           
           # dumpbin.exe required for finding dependencies in find_libraries_and_dependencies.py
-          $env:Path = "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin;" + $env:Path
+          $env:Path = $env:Path + ";C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin"
 
           # for each {64bit and 32bit} x {Python Versions}
           ForEach ($platform_x64 in @($true, $false)) {
@@ -333,14 +333,14 @@ for:
                       $env:BUILD_PLATFORM = "x64"
                       $python_path = "C:\Python$py_ver-x64"
                       $dep_bin = "$dep_bin_64"
-                      $env:INCLUDE = "$dep_inc_64"
-                      $env:LIBPATH = "$dep_lib_64"
+                      $env:INCLUDE = "$dep_inc_64;$env:INCLUDE"
+                      $env:LIBPATH = "$dep_lib_64;$env:LIBPATH"
                   } else {
                       $env:BUILD_PLATFORM = "x86"
                       $python_path = "C:\Python$py_ver"
                       $dep_bin = "$dep_bin_32"
-                      $env:INCLUDE = "$dep_inc_32"
-                      $env:LIBPATH = "$dep_lib_32"
+                      $env:INCLUDE = "$dep_inc_32;$env:INCLUDE"
+                      $env:LIBPATH = "$dep_lib_32;$env:LIBPATH"
                   }
 
                   # collect dll path of tesseract and all other dlls it points to inside $dep_bin
