@@ -1,5 +1,5 @@
 diff --git a/setup.py b/setup.py
-index a1f4b81..d9c2be3 100644
+index b06c872..d39b10e 100644
 --- a/setup.py
 +++ b/setup.py
 @@ -7,6 +7,7 @@ import os
@@ -59,12 +59,14 @@ index a1f4b81..d9c2be3 100644
          build_ext.build_extensions(self)
  
      def finalize_options(self):
-@@ -321,4 +336,8 @@ setup(
-     setup_requires=["Cython>=3.0.0,<3.2.0"],
+@@ -322,4 +337,8 @@ setup(
+     install_requires=["cysignals"],
      packages=["tesserocr"],
      package_dir={"tesserocr": "tesserocr"},
+-)
 +    # ensure typing stubs are also included in wheels on older setuptools
 +    # https://github.com/simonflueckiger/tesserocr-windows_build/issues/30
 +    # https://setuptools.pypa.io/en/latest/userguide/miscellaneous.html
 +    package_data={"tesserocr": ["*.pyi"]}
- )
++)
+\ No newline at end of file
