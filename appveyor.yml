@@ -333,7 +333,7 @@ for:
 
           # for each {64bit and 32bit} x {Python Versions}
           ForEach ($platform_x64 in @($true, $false)) {
-              Import-VsEnv (if ($platform_x64) { "x64" } else { "x86" })
+              Import-VsEnv $(if ($platform_x64) { "x64" } else { "x86" })
               cmd /c "where link" # for debugging
               
               ForEach ($py_ver in $env:PYTHON_VERSIONS -split ", ") {
