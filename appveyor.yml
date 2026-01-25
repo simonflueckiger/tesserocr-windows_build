@@ -420,11 +420,26 @@ for:
     test_script:
       - pwsh: | 
 
+          # Meson/cysignals source build also needed in testing stage for some python/arch combinations
+          $vswhere  = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath   = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
+
+          function Import-VsEnv([string]$arch) {
+            cmd /c "`"$vsDevCmd`" -no_logo -host_arch=x64 -arch=$arch && set" | ForEach-Object {
+              if ($_ -match '^(.*?)=(.*)$') { Set-Item -Force "env:$($matches[1])" ($matches[2].TrimEnd()) }
+            }
+          }
+
           # test suite needs TESSDATA_PREFIX to point to a valid tessdata location 
           $env:TESSDATA_PREFIX = "$PWD\res\tessdata"
 
           # for each {64bit and 32bit} x {Python Versions}
           ForEach ($platform_x64 in @($true, $false)) {
+              Import-VsEnv $(if ($platform_x64) { "x64" } else { "x86" })
+              # for debugging purposes
+              cmd /c "echo ==== TOOLCHAIN CHECK ==== & echo VCToolsInstallDir=%VCToolsInstallDir% & echo WindowsSdkDir=%WindowsSdkDir% & where cl & where link & where dumpbin & echo ========================="
+              
               ForEach ($py_ver in $env:PYTHON_VERSIONS -split ", ") {
                   $py_ver_dot = $py_ver[0] + "." + $py_ver.Substring(1)
                   
