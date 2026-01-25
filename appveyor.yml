@@ -321,6 +321,13 @@ for:
           
           # dumpbin.exe required for finding dependencies in find_libraries_and_dependencies.py
           $env:Path = $env:Path + ";C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin"
+          
+          # remove git bin path as otherwise meson will pick up link.exe from there for the cysignals build from source
+          $gitUsrBin = "C:\Program Files\Git\usr\bin"
+          $pathParts = $env:Path -split ';' | Where-Object { $_ -and ($_ -ne $gitUsrBin) }
+          $env:Path = ($pathParts -join ';')
+
+          cmd /c "where link"
 
           # for each {64bit and 32bit} x {Python Versions}
           ForEach ($platform_x64 in @($true, $false)) {
