@@ -329,14 +329,27 @@ for:
             cmd /c "`"$vsDevCmd`" -no_logo -host_arch=x64 -arch=$arch && set" | ForEach-Object {
               if ($_ -match '^(.*?)=(.*)$') { Set-Item -Force "env:$($matches[1])" ($matches[2].TrimEnd()) }
             }
-          } 
-
+          }
+          
           # for each {64bit and 32bit} x {Python Versions}
           ForEach ($platform_x64 in @($true, $false)) {
               Import-VsEnv $(if ($platform_x64) { "x64" } else { "x86" })
-              cmd /c "where link" # for debugging
+              # for debugging purposes
+              cmd /c "echo ==== TOOLCHAIN CHECK ==== & echo VCToolsInstallDir=%VCToolsInstallDir% & echo WindowsSdkDir=%WindowsSdkDir% & where cl & where link & where dumpbin & echo ========================="
+              
+              # snapshot base env variables so they don't grow uncontrollably during the loops
+              $baseEnvPath    = $env:Path
+              $baseEnvInclude = $env:INCLUDE
+              $baseEnvLib     = $env:LIB
+              $baseEnvLibPath = $env:LIBPATH
               
               ForEach ($py_ver in $env:PYTHON_VERSIONS -split ", ") {
+                  # reset env variables every iteration
+                  $env:Path = $baseEnvPath
+                  $env:INCLUDE = $baseEnvInclude
+                  $env:LIB     = $baseEnvLib
+                  $env:LIBPATH = $baseEnvLibPath
+              
                   $py_ver_dot = $py_ver[0] + "." + $py_ver.Substring(1)
                   
                   # set platform/python-version specific variables
