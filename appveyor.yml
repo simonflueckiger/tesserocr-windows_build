@@ -81,7 +81,7 @@ for:
 
     build_script:
       - pwsh: | 
-          $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
           # ------ Install Legacy CMake for older builds ------------------
           # https://cmake.org/cmake/help/latest/release/4.0.html#deprecated-and-removed-features
           # leptonica 1.82.0 and tesseract 3.x/4.x set the CMake policy version to something < 3.5
@@ -319,18 +319,23 @@ for:
 
           cd tesserocr
           
-          # dumpbin.exe required for finding dependencies in find_libraries_and_dependencies.py
-          $env:Path = $env:Path + ";C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin"
-          
-          # remove git bin path as otherwise meson will pick up link.exe from there for the cysignals build from source
-          $gitUsrBin = "C:\Program Files\Git\usr\bin"
-          $pathParts = $env:Path -split ';' | Where-Object { $_ -and ($_ -ne $gitUsrBin) }
-          $env:Path = ($pathParts -join ';')
+          # load MSVC + Windows SDK environment (needed for Meson/cysignals source builds)
+          # this also provides dumpbin.exe required for finding dependencies in find_libraries_and_dependencies.py
+          $vswhere  = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath   = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
 
-          cmd /c "where link"
+          function Import-VsEnv([string]$arch) {
+            cmd /c "`"$vsDevCmd`" -no_logo -host_arch=x64 -arch=$arch && set" | ForEach-Object {
+              if ($_ -match '^(.*?)=(.*)$') { Set-Item -Force "env:$($matches[1])" ($matches[2].TrimEnd()) }
+            }
+          } 
 
           # for each {64bit and 32bit} x {Python Versions}
           ForEach ($platform_x64 in @($true, $false)) {
+              Import-VsEnv (if ($platform_x64) { "x64" } else { "x86" })
+              cmd /c "where link" # for debugging
+              
               ForEach ($py_ver in $env:PYTHON_VERSIONS -split ", ") {
                   $py_ver_dot = $py_ver[0] + "." + $py_ver.Substring(1)
                   
