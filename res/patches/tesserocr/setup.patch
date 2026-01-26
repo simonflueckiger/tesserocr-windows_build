@@ -1,5 +1,5 @@
 diff --git a/setup.py b/setup.py
-index b06c872..d39b10e 100644
+index b06c872..c60230d 100644
 --- a/setup.py
 +++ b/setup.py
 @@ -7,6 +7,7 @@ import os
@@ -47,7 +47,7 @@ index b06c872..d39b10e 100644
      return Extension("tesserocr.tesserocr", sources=["tesserocr/tesserocr.pyx"], language="c++", **build_args)
  
  
-@@ -273,6 +283,11 @@ class my_build_ext(build_ext, object):
+@@ -273,6 +283,23 @@ class my_build_ext(build_ext, object):
                  _LOGGER.debug("tesseract >= 03.05.02 requires c++11 compiler support")
                  extension.extra_compile_args = extra_args
  
@@ -56,11 +56,26 @@ index b06c872..d39b10e 100644
 +            for dll_path in _DLL_PATHS:
 +                shutil.copy(dll_path, dll_dest_dir)
 +
++            # bundle cysignals binaries into wheel
++            try:
++                import cysignals
++                cysignals_dir = os.path.dirname(cysignals.__file__)
++
++                for file in os.listdir(cysignals_dir):
++                    if file.endswith(('.pyd', '.dll')):
++                        shutil.copy(os.path.join(cysignals_dir, file), dll_dest_dir)
++                        _LOGGER.info(f"Bundled cysignals binary: {file}")
++            except (ImportError, FileNotFoundError) as e:
++                _LOGGER.warning(f"Could not bundle cysignals: {e}")
++
          build_ext.build_extensions(self)
  
      def finalize_options(self):
-@@ -322,4 +337,8 @@ setup(
-     install_requires=["cysignals"],
+@@ -319,7 +346,10 @@ setup(
+     ext_modules=[make_extension()],
+     test_suite="tests",
+     setup_requires=["Cython>=3.0.0,<3.2.0", "cysignals"],
+-    install_requires=["cysignals"],
      packages=["tesserocr"],
      package_dir={"tesserocr": "tesserocr"},
 -)
