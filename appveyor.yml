@@ -406,7 +406,7 @@ for:
                   
                   # install requirements
                   python -m pip install --no-warn-script-location --no-input --only-binary :all: -r requirements-dev.txt
-                  
+                  $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
                   # build wheel
                   python setup.py bdist_wheel
 
