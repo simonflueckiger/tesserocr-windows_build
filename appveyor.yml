@@ -299,11 +299,15 @@ for:
               # - addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
               # - tests whether leptonica can correctly use all image libraries
               # - reverts https://github.com/sirfz/tesserocr/pull/364 (not sure why it was approved in the first place)
-              "test_api.patch",
+              "test_api.py.patch",
               
               # adds functionality to copy dlls to the build directory
               # and to copy typing stubs (.pyi files) to wheels on older setuptools versions
-              "setup.patch"
+              "setup.py.patch",
+              
+              # we bundle cysignals together with this package, so tesserocr.pyx must
+              # use a relative cysignals import for the bundled module layout
+              "tesserocr.pyx.patch
           )
 
           Foreach ($patch_file in $patch_files)
@@ -406,7 +410,7 @@ for:
                   
                   # install requirements
                   python -m pip install --no-warn-script-location --no-input --only-binary :all: -r requirements-dev.txt
-                  $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
                   # build wheel
                   python setup.py bdist_wheel
 

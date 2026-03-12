@@ -1,0 +1,14 @@
+diff --git a/tesserocr/tesserocr.pyx b/tesserocr/tesserocr.pyx
+index 813c26d..6f8f44c 100644
+--- a/tesserocr/tesserocr.pyx
++++ b/tesserocr/tesserocr.pyx
+@@ -39,7 +39,8 @@ from libcpp.pair cimport pair
+ from libcpp.vector cimport vector
+ from cython.operator cimport preincrement as inc, dereference as deref
+ from cpython.version cimport PY_MAJOR_VERSION
+-from cysignals.signals cimport sig_on, sig_off
++# import from relative path since cysignals is copied to the package for windows builds
++from .cysignals.signals cimport sig_on, sig_off
+ 
+ 
+ _LOGGER = logging.getLogger("tesserocr")
