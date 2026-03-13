@@ -410,6 +410,9 @@ for:
                   
                   # install requirements
                   python -m pip install --no-warn-script-location --no-input --only-binary :all: -r requirements-dev.txt
+                  
+                  # install cysignals from source
+                  python -m pip install --no-binary cysignals cysignals
 
                   # build wheel
                   python setup.py bdist_wheel
