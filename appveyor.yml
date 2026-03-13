@@ -424,7 +424,7 @@ for:
                   # build wheel
                   python setup.py bdist_wheel
 
-                  $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+                  # $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
                   # deactivate conda (not sure if really necessary) only if we actually used it this iteration
                   if ($usingConda) {
