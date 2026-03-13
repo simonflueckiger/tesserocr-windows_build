@@ -307,7 +307,7 @@ for:
               
               # we bundle cysignals together with this package, so tesserocr.pyx must
               # use a relative cysignals import for the bundled module layout
-              "tesserocr.pyx.patch
+              "tesserocr.pyx.patch"
           )
 
           Foreach ($patch_file in $patch_files)
