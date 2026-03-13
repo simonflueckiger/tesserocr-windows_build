@@ -1,5 +1,5 @@
 diff --git a/setup.py b/setup.py
-index b06c872..ffcb43d 100644
+index b06c872..7ed3c91 100644
 --- a/setup.py
 +++ b/setup.py
 @@ -7,6 +7,7 @@ import os
@@ -47,7 +47,7 @@ index b06c872..ffcb43d 100644
      return Extension("tesserocr.tesserocr", sources=["tesserocr/tesserocr.pyx"], language="c++", **build_args)
  
  
-@@ -273,6 +283,31 @@ class my_build_ext(build_ext, object):
+@@ -273,6 +283,37 @@ class my_build_ext(build_ext, object):
                  _LOGGER.debug("tesseract >= 03.05.02 requires c++11 compiler support")
                  extension.extra_compile_args = extra_args
  
@@ -65,13 +65,19 @@ index b06c872..ffcb43d 100644
 +            try:
 +                import cysignals
 +                cysignals_src_dir = os.path.dirname(cysignals.__file__)
-+                cysignals_dst_dir = os.path.join(dll_dest_dir, "cysignals")
 +
-+                if os.path.exists(cysignals_dst_dir):
-+                    shutil.rmtree(cysignals_dst_dir)
++                cysignals_source_dst_dir = os.path.join(here, "tesserocr", "cysignals")
++                cysignals_build_dst_dir = os.path.join(dll_dest_dir, "cysignals")
 +
-+                shutil.copytree(cysignals_src_dir, cysignals_dst_dir)
-+                _LOGGER.info("Bundled cysignals package: %s", cysignals_src_dir)
++                if os.path.exists(cysignals_source_dst_dir):
++                    shutil.rmtree(cysignals_source_dst_dir)
++                shutil.copytree(cysignals_src_dir, cysignals_source_dst_dir)
++                _LOGGER.info("Copied cysignals into source tree: %s", cysignals_source_dst_dir)
++
++                if os.path.exists(cysignals_build_dst_dir):
++                    shutil.rmtree(cysignals_build_dst_dir)
++                shutil.copytree(cysignals_src_dir, cysignals_build_dst_dir)
++                _LOGGER.info("Bundled cysignals package: %s", cysignals_build_dst_dir)
 +            except (ImportError, FileNotFoundError) as e:
 +                _LOGGER.warning("Could not bundle cysignals: %s", e)
 +                raise
@@ -79,7 +85,7 @@ index b06c872..ffcb43d 100644
          build_ext.build_extensions(self)
  
      def finalize_options(self):
-@@ -319,7 +354,10 @@ setup(
+@@ -319,7 +360,10 @@ setup(
      ext_modules=[make_extension()],
      test_suite="tests",
      setup_requires=["Cython>=3.0.0,<3.2.0", "cysignals"],
