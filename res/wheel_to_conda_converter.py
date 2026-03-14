@@ -101,11 +101,15 @@ def convert_wheel_to_conda(wheel_path, tesseract_version, output_path):
             if dist_info_dir.is_dir():  # Ensure it's a directory
                 shutil.rmtree(dist_info_dir)
 
-        # Create empty pyc file, so it will be tracked by "files" and later removed during uninstall
-        pycache_dir = os.path.join(site_packages_path, wheel_info.package_name, "__pycache__")
-        os.makedirs(pycache_dir, exist_ok=True)
-        pyc_file = os.path.join(pycache_dir, f"__init__.cpython-{wheel_info.python_version}.pyc")
-        open(pyc_file, 'a').close()
+        # Create empty pyc files, so they will be tracked by "files" and later removed during uninstall
+        for rel_pkg_dir in (
+                Path(wheel_info.package_name),
+                Path(wheel_info.package_name) / "cysignals",
+        ):
+            pycache_dir = Path(site_packages_path) / rel_pkg_dir / "__pycache__"
+            pycache_dir.mkdir(parents=True, exist_ok=True)
+            pyc_file = pycache_dir / f"__init__.cpython-{wheel_info.python_version}.pyc"
+            pyc_file.touch()
 
         # Process extracted files
         paths = []
