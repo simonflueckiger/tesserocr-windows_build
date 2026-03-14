@@ -420,7 +420,7 @@ for:
                   
                   # install cysignals from source and copy to tesserocr/cysignals to resolve relateive .cysignals import in tesserocr.pyx
                   python -m pip install --no-binary cysignals cysignals
-                  python -c "import cysignals, os, shutil; src=os.path.dirname(cysignals.__file__); dst=r'tesserocr/tesserocr/cysignals'; shutil.rmtree(dst, ignore_errors=True); shutil.copytree(src, dst)"
+                  python -c "import cysignals, os, shutil; src=os.path.dirname(cysignals.__file__); dst=r'tesserocr/cysignals'; shutil.rmtree(dst, ignore_errors=True); shutil.copytree(src, dst)"
 
                   # build wheel
                   python setup.py bdist_wheel
