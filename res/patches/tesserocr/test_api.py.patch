@@ -1,5 +1,5 @@
 diff --git a/tests/test_api.py b/tests/test_api.py
-index 6e13400..877cc95 100644
+index 9c74b4b..4181631 100644
 --- a/tests/test_api.py
 +++ b/tests/test_api.py
 @@ -50,6 +50,34 @@ class TestTessBaseApi(unittest.TestCase):

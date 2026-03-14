@@ -1,5 +1,5 @@
 diff --git a/setup.py b/setup.py
-index a1f4b81..d9c2be3 100644
+index b06c872..79f81e2 100644
 --- a/setup.py
 +++ b/setup.py
 @@ -7,6 +7,7 @@ import os
@@ -47,7 +47,7 @@ index a1f4b81..d9c2be3 100644
      return Extension("tesserocr.tesserocr", sources=["tesserocr/tesserocr.pyx"], language="c++", **build_args)
  
  
-@@ -273,6 +283,11 @@ class my_build_ext(build_ext, object):
+@@ -273,6 +283,35 @@ class my_build_ext(build_ext, object):
                  _LOGGER.debug("tesseract >= 03.05.02 requires c++11 compiler support")
                  extension.extra_compile_args = extra_args
  
@@ -56,15 +56,44 @@ index a1f4b81..d9c2be3 100644
 +            for dll_path in _DLL_PATHS:
 +                shutil.copy(dll_path, dll_dest_dir)
 +
++            # since PR https://github.com/sirfz/tesserocr/pull/384, cysignals is a runtime
++            # dependency of tesserocr.
++            # building cysignals can be awkward on windows, especially for win32 where
++            # prebuilt wheels are generally unavailable. to keep the tesserocr windows
++            # wheels usable out of the box and avoid making end users build cysignals
++            # themselves, bundle the resolved cysignals package into the wheel here.
++            try:
++                import cysignals
++                cysignals_src_dir = os.path.dirname(cysignals.__file__)
++                cysignals_dst_dir = os.path.join(dll_dest_dir, "cysignals")
++
++                if os.path.exists(cysignals_dst_dir):
++                    shutil.rmtree(cysignals_dst_dir)
++
++                shutil.copytree(
++                    cysignals_src_dir,
++                    cysignals_dst_dir,
++                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", "*.pxd", "*.h", "*.pc", "*.lib"),
++                )
++                _LOGGER.info("Bundled cysignals package: %s", cysignals_dst_dir)
++            except (ImportError, FileNotFoundError) as e:
++                _LOGGER.warning("Could not bundle cysignals: %s", e)
++                raise
++
          build_ext.build_extensions(self)
  
      def finalize_options(self):
-@@ -321,4 +336,8 @@ setup(
-     setup_requires=["Cython>=3.0.0,<3.2.0"],
+@@ -319,7 +358,10 @@ setup(
+     ext_modules=[make_extension()],
+     test_suite="tests",
+     setup_requires=["Cython>=3.0.0,<3.2.0", "cysignals"],
+-    install_requires=["cysignals"],
      packages=["tesserocr"],
      package_dir={"tesserocr": "tesserocr"},
+-)
 +    # ensure typing stubs are also included in wheels on older setuptools
 +    # https://github.com/simonflueckiger/tesserocr-windows_build/issues/30
 +    # https://setuptools.pypa.io/en/latest/userguide/miscellaneous.html
 +    package_data={"tesserocr": ["*.pyi"]}
- )
++)
+\ No newline at end of file

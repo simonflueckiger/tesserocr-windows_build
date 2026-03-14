@@ -1,4 +1,4 @@
-version: 2.9.1.{build}
+version: 2.10.0.{build}
 image: Visual Studio 2022
 
 # NOTE 2024-03-13: Tesseract 3.x and 4.x seem to be only compatible with leptonica .so version <= 5.x (<= v1.82)
@@ -54,8 +54,8 @@ environment:
 
     - job_name: Build Dependencies - Tesseract 5.x
       job_group: Build Dependencies
-      LEPTONICA_COMMIT_ID: 63aef18 # Leptonica 1.85.0
-      TESSERACT_COMMIT_ID: 3b7c70e # Tesseract 5.5.1
+      LEPTONICA_COMMIT_ID: 13275a2 # Leptonica 1.87.0
+      TESSERACT_COMMIT_ID: 6e1d56a # Tesseract 5.5.2
 
     - job_name: Build Wheels - Tesseract 5.x
       job_group: Build Wheels
@@ -299,11 +299,15 @@ for:
               # - addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
               # - tests whether leptonica can correctly use all image libraries
               # - reverts https://github.com/sirfz/tesserocr/pull/364 (not sure why it was approved in the first place)
-              "test_api.patch",
+              "test_api.py.patch",
               
               # adds functionality to copy dlls to the build directory
               # and to copy typing stubs (.pyi files) to wheels on older setuptools versions
-              "setup.patch"
+              "setup.py.patch",
+              
+              # we bundle cysignals together with this package, so tesserocr.pyx must
+              # use a relative cysignals import for the bundled module layout
+              "tesserocr.pyx.patch"
           )
 
           Foreach ($patch_file in $patch_files)
@@ -319,12 +323,37 @@ for:
 
           cd tesserocr
           
-          # dumpbin.exe required for finding dependencies in find_libraries_and_dependencies.py
-          $env:Path = "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin;" + $env:Path
+          # load MSVC + Windows SDK environment (needed for Meson/cysignals source builds)
+          # this also provides dumpbin.exe required for finding dependencies in find_libraries_and_dependencies.py
+          $vswhere  = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath   = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
 
+          function Import-VsEnv([string]$arch) {
+            cmd /c "`"$vsDevCmd`" -no_logo -host_arch=x64 -arch=$arch && set" | ForEach-Object {
+              if ($_ -match '^(.*?)=(.*)$') { Set-Item -Force "env:$($matches[1])" ($matches[2].TrimEnd()) }
+            }
+          }
+          
           # for each {64bit and 32bit} x {Python Versions}
           ForEach ($platform_x64 in @($true, $false)) {
+              Import-VsEnv $(if ($platform_x64) { "x64" } else { "x86" })
+              # for debugging purposes
+              cmd /c "echo ==== TOOLCHAIN CHECK ==== & echo VCToolsInstallDir=%VCToolsInstallDir% & echo WindowsSdkDir=%WindowsSdkDir% & where cl & where link & where dumpbin & echo ========================="
+              
+              # snapshot base env variables so they don't grow uncontrollably during the loops
+              $baseEnvPath    = $env:Path
+              $baseEnvInclude = $env:INCLUDE
+              $baseEnvLib     = $env:LIB
+              $baseEnvLibPath = $env:LIBPATH
+              
               ForEach ($py_ver in $env:PYTHON_VERSIONS -split ", ") {
+                  # reset env variables every iteration
+                  $env:Path = $baseEnvPath
+                  $env:INCLUDE = $baseEnvInclude
+                  $env:LIB     = $baseEnvLib
+                  $env:LIBPATH = $baseEnvLibPath
+              
                   $py_ver_dot = $py_ver[0] + "." + $py_ver.Substring(1)
                   
                   # set platform/python-version specific variables
@@ -333,14 +362,14 @@ for:
                       $env:BUILD_PLATFORM = "x64"
                       $python_path = "C:\Python$py_ver-x64"
                       $dep_bin = "$dep_bin_64"
-                      $env:INCLUDE = "$dep_inc_64"
-                      $env:LIBPATH = "$dep_lib_64"
+                      $env:INCLUDE = "$dep_inc_64;$env:INCLUDE"
+                      $env:LIBPATH = "$dep_lib_64;$env:LIBPATH"
                   } else {
                       $env:BUILD_PLATFORM = "x86"
                       $python_path = "C:\Python$py_ver"
                       $dep_bin = "$dep_bin_32"
-                      $env:INCLUDE = "$dep_inc_32"
-                      $env:LIBPATH = "$dep_lib_32"
+                      $env:INCLUDE = "$dep_inc_32;$env:INCLUDE"
+                      $env:LIBPATH = "$dep_lib_32;$env:LIBPATH"
                   }
 
                   # collect dll path of tesseract and all other dlls it points to inside $dep_bin
@@ -382,6 +411,10 @@ for:
                   # install requirements
                   python -m pip install --no-warn-script-location --no-input --only-binary :all: -r requirements-dev.txt
                   
+                  # install cysignals from source and copy to tesserocr/cysignals to resolve relateive .cysignals import in tesserocr.pyx
+                  python -m pip install --no-binary cysignals cysignals
+                  python -c "import cysignals, os, shutil; src=os.path.dirname(cysignals.__file__); dst=r'tesserocr/cysignals'; shutil.rmtree(dst, ignore_errors=True); shutil.copytree(src, dst)"
+
                   # build wheel
                   python setup.py bdist_wheel
 
