@@ -14,8 +14,6 @@ environment:
   PYTHON_VERSIONS: 39, 310, 311, 312, 313, 314
   LEGACY_CMAKE_VERSION: 3.29.6
   CONDA_PATH: C:\Miniconda3-x64\Scripts\conda.exe
-  SKIP_DEPENDENCIES_BUILD: true
-  DEPENDENCIES_BUILD_VERSION: 2.10.0.19
   
 
   matrix:
@@ -83,11 +81,6 @@ for:
 
     build_script:
       - pwsh: | 
-
-          if ($env:SKIP_DEPENDENCIES_BUILD -eq "true") {
-            Write-Host "Skipping dependency build stage (SKIP_DEPENDENCIES_BUILD=true)."
-            exit 0
-          }
 
           # ------ Install Legacy CMake for older builds ------------------
           # https://cmake.org/cmake/help/latest/release/4.0.html#deprecated-and-removed-features
@@ -269,12 +262,12 @@ for:
           # ------ Download Dependencies ----------------------------------------
           
           # call AppVeyor api to get the id of the 'Build Dependencies' job corresponding to this job's Tesseract version
-          $request = Invoke-WebRequest -Uri "https://ci.appveyor.com/api/projects/simonflueckiger/tesserocr-windows-build/build/$env:DEPENDENCIES_BUILD_VERSION" -Method:Get -ContentType "application/xml"
+          $request = Invoke-WebRequest -Uri "https://ci.appveyor.com/api/projects/simonflueckiger/tesserocr-windows-build/build/$env:APPVEYOR_BUILD_VERSION" -Method:Get -ContentType "application/xml"
           $job_suffix = ($env:APPVEYOR_JOB_NAME -split " ")[-1]
           $job = ([xml]$request.Content).ProjectBuildResults.Build.Jobs.BuildJobModel | Where-Object Name -match "Build Dependencies.*$job_suffix"
 
           # piece together the dependencies zip artifact url from 'Build Dependencies' job
-          $url = "https://ci.appveyor.com/api/buildjobs/" + $job.JobId + "/artifacts/tesseract_leptonica_binaries_" + $env:DEPENDENCIES_BUILD_VERSION + ".zip"
+          $url = "https://ci.appveyor.com/api/buildjobs/" + $job.JobId + "/artifacts/tesseract_leptonica_binaries_" + $env:APPVEYOR_BUILD_VERSION + ".zip"
 
           # download and unpack the archive
           Invoke-WebRequest $url -OutFile dependencies.zip
@@ -425,8 +418,6 @@ for:
                   # build wheel
                   python setup.py bdist_wheel
 
-                  # $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-
                   # deactivate conda (not sure if really necessary) only if we actually used it this iteration
                   if ($usingConda) {
                       conda deactivate
@@ -437,26 +428,11 @@ for:
     test_script:
       - pwsh: | 
 
-          # Meson/cysignals source build also needed in testing stage for some python/arch combinations
-          $vswhere  = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          $vsPath   = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
-
-          function Import-VsEnv([string]$arch) {
-            cmd /c "`"$vsDevCmd`" -no_logo -host_arch=x64 -arch=$arch && set" | ForEach-Object {
-              if ($_ -match '^(.*?)=(.*)$') { Set-Item -Force "env:$($matches[1])" ($matches[2].TrimEnd()) }
-            }
-          }
-
           # test suite needs TESSDATA_PREFIX to point to a valid tessdata location 
           $env:TESSDATA_PREFIX = "$PWD\res\tessdata"
 
           # for each {64bit and 32bit} x {Python Versions}
           ForEach ($platform_x64 in @($true, $false)) {
-              Import-VsEnv $(if ($platform_x64) { "x64" } else { "x86" })
-              # for debugging purposes
-              cmd /c "echo ==== TOOLCHAIN CHECK ==== & echo VCToolsInstallDir=%VCToolsInstallDir% & echo WindowsSdkDir=%WindowsSdkDir% & where cl & where link & where dumpbin & echo ========================="
-              
               ForEach ($py_ver in $env:PYTHON_VERSIONS -split ", ") {
                   $py_ver_dot = $py_ver[0] + "." + $py_ver.Substring(1)
                   
