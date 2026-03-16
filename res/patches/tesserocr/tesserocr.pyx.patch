@@ -1,14 +1,191 @@
 diff --git a/tesserocr/tesserocr.pyx b/tesserocr/tesserocr.pyx
-index 813c26d..6f8f44c 100644
+index 813c26d..b59a8eb 100644
 --- a/tesserocr/tesserocr.pyx
 +++ b/tesserocr/tesserocr.pyx
-@@ -39,7 +39,8 @@ from libcpp.pair cimport pair
+@@ -39,8 +39,105 @@ from libcpp.pair cimport pair
  from libcpp.vector cimport vector
  from cython.operator cimport preincrement as inc, dereference as deref
  from cpython.version cimport PY_MAJOR_VERSION
 -from cysignals.signals cimport sig_on, sig_off
 +# import from relative path since cysignals is copied to the package for windows builds
 +from .cysignals.signals cimport sig_on, sig_off
++
++# windows ctrl+c notes
++#
++# this is here so future me does not have to rediscover all of this again.
++#
++# what i found out
++#
++# cysignals itself is not the main problem here. synthetic and pending sigint
++# cases worked in local probes. but on windows sig_on() alone did not make a
++# long monolithic native call stop on one manual ctrl+c.
++#
++# the useful path turned out to be tesseract's own ETEXT_DESC.cancel callback.
++# so instead of hoping sig_on() will jump out of recognize() we hook ctrl+c
++# into a native cancel flag and let tesseract stop cooperatively.
++#
++# the flow is now basically this
++#
++# first ctrl+c
++#   set cancel flag
++#   return true from the console handler
++#   tesseract sees monitor.cancel and stops when it reaches one of its check points
++#   after recognize() returns we raise KeyboardInterrupt
++#
++# second ctrl+c
++#   do not swallow it
++#   let normal console termination happen
++#
++# important caveat
++#
++# this is cooperative cancellation, not hard preemption. so it will usually
++# stop much earlier, but not necessarily immediately. it depends on when
++# tesseract next checks the monitor.
++#
++# also, the useful interruption path lives in Recognize(). GetUTF8Text() does
++# not have its own tesseract monitor callback, so wrapping GetUTF8Text() in
++# sig_on() is not the same thing on windows.
++
++cdef extern from *:
++    """
++    #ifdef _WIN32
++    #include <windows.h>
  
++    static volatile LONG _tessocr_cancel_requested = 0;
++
++    static BOOL WINAPI _tessocr_ctrl_handler(DWORD ctrl_type) {
++        if (ctrl_type == CTRL_C_EVENT || ctrl_type == CTRL_BREAK_EVENT) {
++            if (InterlockedCompareExchange(&_tessocr_cancel_requested, 1, 0) == 0) {
++                return TRUE;   /* first Ctrl+C -> request cooperative cancel */
++            }
++            return FALSE;      /* second Ctrl+C -> let normal termination happen */
++        }
++        return FALSE;
++    }
++
++    static void _tessocr_install_ctrl_handler(void) {
++        SetConsoleCtrlHandler(_tessocr_ctrl_handler, TRUE);
++    }
++
++    static void _tessocr_remove_ctrl_handler(void) {
++        SetConsoleCtrlHandler(_tessocr_ctrl_handler, FALSE);
++    }
++
++    static bool _tessocr_cancel_func(void *cancel_this, int words) {
++        return InterlockedCompareExchange(&_tessocr_cancel_requested, 0, 0) != 0;
++    }
++
++    static void _tessocr_cancel_reset(void) {
++        InterlockedExchange(&_tessocr_cancel_requested, 0);
++    }
++
++    static int _tessocr_cancel_requested_now(void) {
++        return InterlockedCompareExchange(&_tessocr_cancel_requested, 0, 0) != 0;
++    }
++    #else
++    static int _tessocr_cancel_requested = 0;
++
++    static void _tessocr_install_ctrl_handler(void) {}
++    static void _tessocr_remove_ctrl_handler(void) {}
++
++    static bool _tessocr_cancel_func(void *cancel_this, int words) {
++        return _tessocr_cancel_requested != 0;
++    }
++
++    static void _tessocr_cancel_reset(void) {
++        _tessocr_cancel_requested = 0;
++    }
++
++    static int _tessocr_cancel_requested_now(void) {
++        return _tessocr_cancel_requested != 0;
++    }
++    #endif
++    """
++    void _tessocr_install_ctrl_handler() nogil
++    void _tessocr_remove_ctrl_handler() nogil
++    bint _tessocr_cancel_func(void *cancel_this, int words) nogil
++    void _tessocr_cancel_reset() nogil
++    int _tessocr_cancel_requested_now() nogil
  
  _LOGGER = logging.getLogger("tesserocr")
+ 
+@@ -2150,16 +2247,28 @@ cdef class PyTessBaseAPI:
+         cdef:
+             ETEXT_DESC monitor
+             int res
++            bint cancelled
++
+         with nogil:
+-            sig_on()
++            _tessocr_cancel_reset()
++            monitor.cancel = _tessocr_cancel_func
++            monitor.cancel_this = NULL
++
+             if timeout > 0:
+-                monitor.cancel = NULL
+-                monitor.cancel_this = NULL
+                 monitor.set_deadline_msecs(timeout)
++
++            _tessocr_install_ctrl_handler()
++            sig_on()
++            try:
+                 res = self._baseapi.Recognize(&monitor)
+-            else:
+-                res = self._baseapi.Recognize(NULL)
+-            sig_off()
++                cancelled = _tessocr_cancel_requested_now() != 0
++            finally:
++                _tessocr_remove_ctrl_handler()
++                sig_off()
++
++        if cancelled:
++            raise KeyboardInterrupt()
++
+         return res == 0
+ 
+     """Methods to retrieve information after :meth:`SetImage`,
+@@ -2171,16 +2280,28 @@ cdef class PyTessBaseAPI:
+             cdef:
+                 ETEXT_DESC monitor
+                 int res
++                bint cancelled
++
+             with nogil:
+-                sig_on()
++                _tessocr_cancel_reset()
++                monitor.cancel = _tessocr_cancel_func
++                monitor.cancel_this = NULL
++
+                 if timeout > 0:
+-                    monitor.cancel = NULL
+-                    monitor.cancel_this = NULL
+                     monitor.set_deadline_msecs(timeout)
++
++                _tessocr_install_ctrl_handler()
++                sig_on()
++                try:
+                     res = self._baseapi.RecognizeForChopTest(&monitor)
+-                else:
+-                    res = self._baseapi.RecognizeForChopTest(NULL)
+-                sig_off()
++                    cancelled = _tessocr_cancel_requested_now() != 0
++                finally:
++                    _tessocr_remove_ctrl_handler()
++                    sig_off()
++
++            if cancelled:
++                raise KeyboardInterrupt()
++
+             return res == 0
+ 
+     cdef TessResultRenderer *_get_renderer(self, cchar_t *outputbase):
+@@ -2376,6 +2497,9 @@ cdef class PyTessBaseAPI:
+             return None
+         return PyResultIterator.createResultIterator(iterator)
+ 
++    # note
++    # on windows the useful ctrl+c path is in Recognize() via ETEXT_DESC.cancel
++    # GetUTF8Text() itself still does not have its own tesseract monitor callback
+     def GetUTF8Text(self):
+         """Return the recognized text coded as UTF-8 from the image."""
+         cdef char *text
