@@ -1,4 +1,4 @@
-version: 2.10.0.{build}
+version: 2.11.0.{build}
 image: Visual Studio 2022
 
 # NOTE 2024-03-13: Tesseract 3.x and 4.x seem to be only compatible with leptonica .so version <= 5.x (<= v1.82)
@@ -298,7 +298,8 @@ for:
           $patch_files = @(
               # - addresses this issue for tesseract 5.x https://github.com/sirfz/tesserocr/issues/295
               # - tests whether leptonica can correctly use all image libraries
-              # - reverts https://github.com/sirfz/tesserocr/pull/364 (not sure why it was approved in the first place)
+              # note: the revert of https://github.com/sirfz/tesserocr/pull/364 was dropped in 2.11.0 --
+              #       upstream fixed it themselves in https://github.com/sirfz/tesserocr/pull/388
               "test_api.py.patch",
               
               # adds functionality to copy dlls to the build directory
