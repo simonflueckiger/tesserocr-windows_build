@@ -1,9 +1,9 @@
 diff --git a/tests/test_api.py b/tests/test_api.py
-index 9c74b4b..4181631 100644
+index 88b0fa3..f81a365 100644
 --- a/tests/test_api.py
 +++ b/tests/test_api.py
-@@ -50,6 +50,34 @@ class TestTessBaseApi(unittest.TestCase):
-     _test_dir = os.path.abspath(os.path.dirname(__file__))
+@@ -51,6 +51,34 @@ class TestTessBaseApi(unittest.TestCase):
+     _config_file = os.path.join(_test_dir, "box.train")
      _image_file = os.path.join(_test_dir, "eurotext.png")
  
 +    # https://github.com/DanBloomberg/leptonica/blob/5e4f9a6dba8a440689edb803b19d72648282e270/src/imageio.h#L33C1-L43C35
@@ -37,16 +37,7 @@ index 9c74b4b..4181631 100644
      def setUp(self):
          if pil_installed:
              with open(self._image_file, "rb") as f:
-@@ -83,7 +111,7 @@ class TestTessBaseApi(unittest.TestCase):
-         self._api.End()
-         self._api.InitFull(configs=configs, variables=vars_)
-         # assert file_type from box.train and custom edges_childarea
--        self.assertEqual(self._api.GetVariableAsString("file_type"), ".tif")
-+        self.assertEqual(self._api.GetVariableAsString("file_type"), ".bl")
-         self.assertEqual(self._api.GetVariableAsString("edges_childarea"), "0.7")
-         # reset back to default
-         self._api.End()
-@@ -115,6 +143,17 @@ class TestTessBaseApi(unittest.TestCase):
+@@ -116,6 +144,17 @@ class TestTessBaseApi(unittest.TestCase):
          text2 = tesserocr.file_to_text(self._image_file)
          self.assertEqual(text, text2)
  
@@ -64,7 +55,7 @@ index 9c74b4b..4181631 100644
      @unittest.skipIf(not pil_installed, "Pillow not installed")
      def test_thresholded_image(self):
          """Test GetThresholdedImage and GetThresholdedImageScaleFactor."""
-@@ -183,7 +222,8 @@ class TestTessBaseApi(unittest.TestCase):
+@@ -184,7 +223,8 @@ class TestTessBaseApi(unittest.TestCase):
          self.assertEqual([v[0] for v in mapped_confidences], words)
          self.assertEqual([v[1] for v in mapped_confidences], confidences)
  
