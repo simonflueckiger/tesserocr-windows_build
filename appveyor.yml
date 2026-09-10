@@ -6,9 +6,10 @@ image: Visual Studio 2022
 #                  https://github.com/DanBloomberg/leptonica/commit/e8b670d9357c78a6a93fa23e27bb25675c695fa3
 #                  https://github.com/tesseract-ocr/tesseract/commit/f36c0d019be59cae3b96da0d89d870dbe83e9714
 #
-# TODO 2024-03-03: During Tesseract CMake config we get "Leptonica was build without TIFF support! Disabling TIFF support..."
-#                  even though loading TIFFs in tesserocr via Leptonica seems to work fine.
-#                  maybe check changes to TIFF_TEST https://github.com/tesseract-ocr/tesseract/commit/54b9fe4de9f0aa3af15f52a6f27ffaf758b43769
+# NOTE 2026-09-10: Tesseract 5.x CMake config reports "Leptonica was build without TIFF support! Disabling TIFF support...".
+#                  Misleading: leptonica is built here WITH libtiff (org.sw.demo.tiff). check_leptonica_tiff_support()
+#                  only try_run()s a pixWriteMemTiff() *write* test; why that returns non-zero is unknown. Does not
+#                  affect us: tesserocr reads via pixRead, and test_leptonica_image_formats covers eurotext.tif (green in 2.11.0.1).
 
 environment:
   PYTHON_VERSIONS: 39, 310, 311, 312, 313, 314
