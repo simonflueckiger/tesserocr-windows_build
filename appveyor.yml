@@ -254,7 +254,10 @@ for:
           # https://github.com/PowerShell/PowerShell/issues/24942#issuecomment-2638032757
           # update conda to 25.1.1 so it works nicely together with PowerShell 7.5.0+
           # this also requires at least Python 3.9
-          & $env:CONDA_PATH install -n base "conda>=25.1.1" "python>=3.9" -S -y
+          # --repodata-fn skips the current_repodata.json fetch which fails on the agent
+          & $env:CONDA_PATH install -n base "conda>=25.1.1" "python>=3.9" -S -y --repodata-fn repodata.json
+          if ($LASTEXITCODE -ne 0) { "WARNING: conda update failed with exit code $LASTEXITCODE" }
+          & $env:CONDA_PATH --version
           
           # reset channels to default (can be empty after update)
           & $env:CONDA_PATH config --remove-key channels 2>$null
@@ -382,8 +385,12 @@ for:
 
                   $usingConda = $false
 
+                  # FORCE_CONDA ("39-64" or "39-64, 314-32") forces those combos down the conda path
+                  $archSuffix = if ($platform_x64) { "64" } else { "32" }
+                  $forceConda = ($env:FORCE_CONDA -split "\s*,\s*") -contains "$py_ver-$archSuffix"
+
                   # use conda if python version not found on agent
-                  if (Test-Path $python_path) {
+                  if ((Test-Path $python_path) -and -not $forceConda) {
                       $env:Path = "$python_path;" + $env:Path
                   } else {
                       $usingConda = $true
@@ -449,13 +456,16 @@ for:
                   
                   $usingConda = $false
 
+                  # FORCE_CONDA must match build_script or wheels get tested against the wrong python
+                  $archSuffix = if ($platform_x64) { '64' } else { '32' }
+                  $forceConda = ($env:FORCE_CONDA -split "\s*,\s*") -contains "$py_ver-$archSuffix"
+
                   # use conda if python version not found on agent
-                  if (Test-Path $python_path) {
+                  if ((Test-Path $python_path) -and -not $forceConda) {
                       $env:Path = "$python_path;" + $env:Path
                   } else {
                       $usingConda = $true
                       (& $env:CONDA_PATH "shell.powershell" "hook") | Out-String | Invoke-Expression
-                      $archSuffix = if ($platform_x64) { '64' } else { '32' }
                       conda activate py$py_ver-$archSuffix
                       
                       # log envs and packages for debugging
