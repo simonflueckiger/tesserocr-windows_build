@@ -70,23 +70,43 @@ environment:
 # a minute whether conda 4.8.2 can reach conda-forge, and whether its ca bundle is the problem
 init:
   - pwsh: |
-      # stop inferring from `conda search` -- run the exact command that fails, untruncated,
-      # then the same install with channels forced, to separate the two hypotheses in one go
-      & $env:CONDA_PATH --version
+      # every exit code is captured on its own line immediately after the command, never inside
+      # an interpolated string -- that is how the previous two probes measured the wrong command
+      $condaOld = "$env:CONDA_PATH"
+      $condaNew = "C:\tools\miniconda3\Scripts\conda.exe"
+      $pyOld    = "C:\Miniconda3-x64\python.exe"
 
-      "--- conda info ---"
-      & $env:CONDA_PATH info
+      "=== proxy environment ==="
+      "HTTP_PROXY='$env:HTTP_PROXY'  HTTPS_PROXY='$env:HTTPS_PROXY'  NO_PROXY='$env:NO_PROXY'"
+      netsh winhttp show proxy
 
-      "--- config sources ---"
-      & $env:CONDA_PATH config --show-sources
+      "=== conda's own python: version and tls stack ==="
+      if (Test-Path $pyOld) {
+          & $pyOld -c "import ssl, sys; print('python', sys.version.split()[0]); print('openssl', ssl.OPENSSL_VERSION)"
+          $rc = $LASTEXITCODE
+          "EXIT python-version = $rc"
 
-      "--- exact failing command ---"
-      & $env:CONDA_PATH install -n base "conda>=25.1.1" "python>=3.9" -S -y
-      "PROBE install exit code: $LASTEXITCODE"
+          "=== can that python reach the host directly, bypassing conda? ==="
+          & $pyOld -c "import urllib.request as u; r=u.urlopen('https://repo.anaconda.com/pkgs/main/win-64/current_repodata.json', timeout=30); print('urllib http', r.getcode())"
+          $rc = $LASTEXITCODE
+          "EXIT python-urllib = $rc"
+      } else { "$pyOld missing" }
 
-      "--- same install, channels forced to defaults ---"
-      & $env:CONDA_PATH install -n base -c defaults --override-channels "conda>=25.1.1" "python>=3.9" -S -y
-      "PROBE forced-channel install exit code: $LASTEXITCODE"
+      "=== old conda install, verbose tail ==="
+      & $condaOld install -n base "conda>=25.1.1" -S -y -vv 2>&1 | Select-Object -Last 45
+      $rc = $LASTEXITCODE
+      "EXIT old-conda-install = $rc"
+
+      "=== choco miniconda3, then test 4.12.0 properly this time ==="
+      choco upgrade miniconda3 -y --no-progress 2>&1 | Select-Object -Last 3
+      $rc = $LASTEXITCODE
+      "EXIT choco = $rc"
+
+      if (Test-Path $condaNew) {
+          & $condaNew install -n base "conda>=25.1.1" -S -y 2>&1 | Select-Object -Last 20
+          $rc = $LASTEXITCODE
+          "EXIT new-conda-install = $rc"
+      } else { "$condaNew missing" }
 
 # don't build if only readme changed
 skip_commits:
