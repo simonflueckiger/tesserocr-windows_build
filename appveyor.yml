@@ -70,17 +70,35 @@ environment:
 # a minute whether conda 4.8.2 can reach conda-forge, and whether its ca bundle is the problem
 init:
   - pwsh: |
-      & $env:CONDA_PATH --version
+      $candidates = @(
+          "$env:CONDA_PATH",
+          "C:\tools\miniconda3\Scripts\conda.exe",
+          "C:\ProgramData\miniconda3\Scripts\conda.exe",
+          "C:\Miniconda3\Scripts\conda.exe"
+      )
 
-      # 1. different host, possibly a tls config 4.8.2 can still negotiate
-      & $env:CONDA_PATH search -c conda-forge --override-channels conda 2>&1 | Select-Object -Last 2
-      "PROBE conda-forge reachable: $($LASTEXITCODE -eq 0)"
+      function Show-Condas($label) {
+          "--- $label ---"
+          foreach ($p in $candidates) {
+              if (Test-Path $p) { "  $p -> $(& $p --version 2>&1)" } else { "  $p -> missing" }
+          }
+      }
 
-      # 2. if this works it is a stale ca bundle, fixable without replacing conda
-      & $env:CONDA_PATH config --set ssl_verify false
-      & $env:CONDA_PATH search -c defaults --override-channels conda 2>&1 | Select-Object -Last 2
-      "PROBE defaults with ssl_verify=false: $($LASTEXITCODE -eq 0)"
-      & $env:CONDA_PATH config --set ssl_verify true
+      Show-Condas "before"
+
+      "--- choco upgrade miniconda3 ---"
+      choco upgrade miniconda3 -y --no-progress 2>&1 | Select-Object -Last 12
+      "PROBE choco exit code: $LASTEXITCODE"
+
+      Show-Condas "after"
+
+      # the one that matters: does CONDA_PATH still work, and can whatever we now have fetch?
+      $usable = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+      "PROBE CONDA_PATH still valid: $(Test-Path $env:CONDA_PATH)"
+      if ($usable) {
+          & $usable search -c defaults --override-channels conda 2>&1 | Select-Object -Last 2
+          "PROBE $usable can fetch: $($LASTEXITCODE -eq 0)"
+      }
 
 # don't build if only readme changed
 skip_commits:
