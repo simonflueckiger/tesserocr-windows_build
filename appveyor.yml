@@ -66,48 +66,6 @@ environment:
       job_group: Build Conda Packages
       job_depends_on: Build Wheels - Tesseract 5.x
 
-# exploratory, drop before merging: init runs before the repo is cloned, so these answer within
-# a minute whether conda 4.8.2 can reach conda-forge, and whether its ca bundle is the problem
-init:
-  - pwsh: |
-      # hypothesis: _ssl cannot load its openssl dlls because <prefix>\Library\bin is not on PATH.
-      # if so, adding it fixes everything; if ssl still fails, the install itself is broken.
-      $prefix = "C:\Miniconda3-x64"
-      $py     = "$prefix\python.exe"
-      $conda  = "$prefix\Scripts\conda.exe"
-
-      "=== do the openssl dlls exist? ==="
-      if (Test-Path "$prefix\Library\bin") {
-          Get-ChildItem "$prefix\Library\bin" -Filter "*ssl*"    | ForEach-Object { "  $($_.Name)" }
-          Get-ChildItem "$prefix\Library\bin" -Filter "*crypto*" | ForEach-Object { "  $($_.Name)" }
-      } else { "  $prefix\Library\bin MISSING" }
-
-      "=== baseline: import ssl WITHOUT Library\bin on PATH ==="
-      & $py -c "import ssl; print('ssl ok', ssl.OPENSSL_VERSION)"
-      $rc = $LASTEXITCODE
-      "EXIT ssl-without-path = $rc"
-
-      $saved = $env:Path
-      $env:Path = "$prefix\Library\bin;$prefix\Library\usr\bin;$prefix\Library\mingw-w64\bin;$prefix\Scripts;$prefix;" + $env:Path
-
-      "=== import ssl WITH Library\bin on PATH ==="
-      & $py -c "import ssl; print('ssl ok', ssl.OPENSSL_VERSION)"
-      $rc = $LASTEXITCODE
-      "EXIT ssl-with-path = $rc"
-
-      "=== urllib over https WITH path ==="
-      & $py -c "import urllib.request as u; print('urllib http', u.urlopen('https://repo.anaconda.com/pkgs/main/win-64/current_repodata.json', timeout=30).getcode())"
-      $rc = $LASTEXITCODE
-      "EXIT urllib-with-path = $rc"
-
-      "=== the real thing: conda install WITH path ==="
-      & $conda install -n base "conda>=25.1.1" "python>=3.9" -S -y 2>&1 | Select-Object -Last 15
-      $rc = $LASTEXITCODE
-      "EXIT conda-install-with-path = $rc"
-
-      & $conda --version
-      $env:Path = $saved
-
 # don't build if only readme changed
 skip_commits:
   files:
@@ -293,16 +251,16 @@ for:
       
           # ------ Update Conda -------------------------------------------------
           
+          # conda's python cannot import ssl unless <prefix>\Library\bin is on PATH (the openssl
+          # dlls live there), so without this every conda download fails with "HTTP 000"
+          $conda_prefix = Split-Path (Split-Path $env:CONDA_PATH -Parent) -Parent
+          $env:Path = "$conda_prefix\Library\bin;" + $env:Path
+
           # https://github.com/PowerShell/PowerShell/issues/24942#issuecomment-2638032757
           # update conda to 25.1.1 so it works nicely together with PowerShell 7.5.0+
           # this also requires at least Python 3.9
           & $env:CONDA_PATH install -n base "conda>=25.1.1" "python>=3.9" -S -y
-          if ($LASTEXITCODE -ne 0) {
-              "WARNING: conda update failed with exit code $LASTEXITCODE"
-              # probe the same host from powershell: an http status means it is reachable and conda's
-              # own tls stack is at fault, a connection error means the host is blocked from the agent
-              try { "  probe: HTTP $((Invoke-WebRequest -Uri 'https://repo.anaconda.com/pkgs/main/win-64/repodata.json' -Method Head -TimeoutSec 30 -UseBasicParsing).StatusCode)" } catch { "  probe failed: $($_.Exception.Message)" }
-          }
+          if ($LASTEXITCODE -ne 0) { "WARNING: conda update failed with exit code $LASTEXITCODE" }
           & $env:CONDA_PATH --version
           
           # reset channels to default (can be empty after update)
