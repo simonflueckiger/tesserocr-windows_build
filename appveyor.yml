@@ -92,13 +92,17 @@ init:
 
       Show-Condas "after"
 
-      # the one that matters: does CONDA_PATH still work, and can whatever we now have fetch?
-      $usable = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
-      "PROBE CONDA_PATH still valid: $(Test-Path $env:CONDA_PATH)"
-      if ($usable) {
-          & $usable search -c defaults --override-channels conda 2>&1 | Select-Object -Last 2
-          "PROBE $usable can fetch: $($LASTEXITCODE -eq 0)"
+      # test EVERY conda we found, not just the first -- the whole question is whether the
+      # newer one choco drops in can fetch, since 4.8.2 demonstrably cannot
+      foreach ($p in ($candidates | Where-Object { Test-Path $_ })) {
+          & $p search -c defaults --override-channels conda 2>&1 | Out-Null
+          "PROBE can fetch [$(& $p --version 2>&1)] $p : $($LASTEXITCODE -eq 0)"
       }
+
+      # and confirm the direct route: powershell's transport works, so we could just fetch a
+      # current installer ourselves instead of relying on choco's ancient package
+      try { "PROBE current miniconda installer reachable: HTTP $((Invoke-WebRequest -Uri 'https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe' -Method Head -TimeoutSec 30).StatusCode)" }
+      catch { "PROBE current miniconda installer failed: $($_.Exception.Message)" }
 
 # don't build if only readme changed
 skip_commits:
