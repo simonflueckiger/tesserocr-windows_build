@@ -254,9 +254,13 @@ for:
           # https://github.com/PowerShell/PowerShell/issues/24942#issuecomment-2638032757
           # update conda to 25.1.1 so it works nicely together with PowerShell 7.5.0+
           # this also requires at least Python 3.9
-          # --repodata-fn skips the current_repodata.json fetch which fails on the agent
-          & $env:CONDA_PATH install -n base "conda>=25.1.1" "python>=3.9" -S -y --repodata-fn repodata.json
-          if ($LASTEXITCODE -ne 0) { "WARNING: conda update failed with exit code $LASTEXITCODE" }
+          & $env:CONDA_PATH install -n base "conda>=25.1.1" "python>=3.9" -S -y
+          if ($LASTEXITCODE -ne 0) {
+              "WARNING: conda update failed with exit code $LASTEXITCODE"
+              # probe the same host from powershell: an http status means it is reachable and conda's
+              # own tls stack is at fault, a connection error means the host is blocked from the agent
+              try { "  probe: HTTP $((Invoke-WebRequest -Uri 'https://repo.anaconda.com/pkgs/main/win-64/repodata.json' -Method Head -TimeoutSec 30 -UseBasicParsing).StatusCode)" } catch { "  probe failed: $($_.Exception.Message)" }
+          }
           & $env:CONDA_PATH --version
           
           # reset channels to default (can be empty after update)
