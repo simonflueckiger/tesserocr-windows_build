@@ -70,43 +70,43 @@ environment:
 # a minute whether conda 4.8.2 can reach conda-forge, and whether its ca bundle is the problem
 init:
   - pwsh: |
-      # every exit code is captured on its own line immediately after the command, never inside
-      # an interpolated string -- that is how the previous two probes measured the wrong command
-      $condaOld = "$env:CONDA_PATH"
-      $condaNew = "C:\tools\miniconda3\Scripts\conda.exe"
-      $pyOld    = "C:\Miniconda3-x64\python.exe"
+      # hypothesis: _ssl cannot load its openssl dlls because <prefix>\Library\bin is not on PATH.
+      # if so, adding it fixes everything; if ssl still fails, the install itself is broken.
+      $prefix = "C:\Miniconda3-x64"
+      $py     = "$prefix\python.exe"
+      $conda  = "$prefix\Scripts\conda.exe"
 
-      "=== proxy environment ==="
-      "HTTP_PROXY='$env:HTTP_PROXY'  HTTPS_PROXY='$env:HTTPS_PROXY'  NO_PROXY='$env:NO_PROXY'"
-      netsh winhttp show proxy
+      "=== do the openssl dlls exist? ==="
+      if (Test-Path "$prefix\Library\bin") {
+          Get-ChildItem "$prefix\Library\bin" -Filter "*ssl*"    | ForEach-Object { "  $($_.Name)" }
+          Get-ChildItem "$prefix\Library\bin" -Filter "*crypto*" | ForEach-Object { "  $($_.Name)" }
+      } else { "  $prefix\Library\bin MISSING" }
 
-      "=== conda's own python: version and tls stack ==="
-      if (Test-Path $pyOld) {
-          & $pyOld -c "import ssl, sys; print('python', sys.version.split()[0]); print('openssl', ssl.OPENSSL_VERSION)"
-          $rc = $LASTEXITCODE
-          "EXIT python-version = $rc"
-
-          "=== can that python reach the host directly, bypassing conda? ==="
-          & $pyOld -c "import urllib.request as u; r=u.urlopen('https://repo.anaconda.com/pkgs/main/win-64/current_repodata.json', timeout=30); print('urllib http', r.getcode())"
-          $rc = $LASTEXITCODE
-          "EXIT python-urllib = $rc"
-      } else { "$pyOld missing" }
-
-      "=== old conda install, verbose tail ==="
-      & $condaOld install -n base "conda>=25.1.1" -S -y -vv 2>&1 | Select-Object -Last 45
+      "=== baseline: import ssl WITHOUT Library\bin on PATH ==="
+      & $py -c "import ssl; print('ssl ok', ssl.OPENSSL_VERSION)"
       $rc = $LASTEXITCODE
-      "EXIT old-conda-install = $rc"
+      "EXIT ssl-without-path = $rc"
 
-      "=== choco miniconda3, then test 4.12.0 properly this time ==="
-      choco upgrade miniconda3 -y --no-progress 2>&1 | Select-Object -Last 3
+      $saved = $env:Path
+      $env:Path = "$prefix\Library\bin;$prefix\Library\usr\bin;$prefix\Library\mingw-w64\bin;$prefix\Scripts;$prefix;" + $env:Path
+
+      "=== import ssl WITH Library\bin on PATH ==="
+      & $py -c "import ssl; print('ssl ok', ssl.OPENSSL_VERSION)"
       $rc = $LASTEXITCODE
-      "EXIT choco = $rc"
+      "EXIT ssl-with-path = $rc"
 
-      if (Test-Path $condaNew) {
-          & $condaNew install -n base "conda>=25.1.1" -S -y 2>&1 | Select-Object -Last 20
-          $rc = $LASTEXITCODE
-          "EXIT new-conda-install = $rc"
-      } else { "$condaNew missing" }
+      "=== urllib over https WITH path ==="
+      & $py -c "import urllib.request as u; print('urllib http', u.urlopen('https://repo.anaconda.com/pkgs/main/win-64/current_repodata.json', timeout=30).getcode())"
+      $rc = $LASTEXITCODE
+      "EXIT urllib-with-path = $rc"
+
+      "=== the real thing: conda install WITH path ==="
+      & $conda install -n base "conda>=25.1.1" "python>=3.9" -S -y 2>&1 | Select-Object -Last 15
+      $rc = $LASTEXITCODE
+      "EXIT conda-install-with-path = $rc"
+
+      & $conda --version
+      $env:Path = $saved
 
 # don't build if only readme changed
 skip_commits:
