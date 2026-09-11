@@ -66,6 +66,14 @@ environment:
       job_group: Build Conda Packages
       job_depends_on: Build Wheels - Tesseract 5.x
 
+# exploratory, drop before merging: init runs before the repo is cloned, so this answers
+# whether repo.anaconda.com is reachable from the agent within a minute of the build starting
+init:
+  - pwsh: |
+      & $env:CONDA_PATH --version
+      try { "probe: HTTP $((Invoke-WebRequest -Uri 'https://repo.anaconda.com/pkgs/main/win-64/repodata.json' -Method Head -TimeoutSec 30).StatusCode)" }
+      catch { "probe failed: $($_.Exception.Message)" }
+
 # don't build if only readme changed
 skip_commits:
   files:
