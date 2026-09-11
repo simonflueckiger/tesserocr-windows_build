@@ -66,13 +66,21 @@ environment:
       job_group: Build Conda Packages
       job_depends_on: Build Wheels - Tesseract 5.x
 
-# exploratory, drop before merging: init runs before the repo is cloned, so this answers
-# whether repo.anaconda.com is reachable from the agent within a minute of the build starting
+# exploratory, drop before merging: init runs before the repo is cloned, so these answer within
+# a minute whether conda 4.8.2 can reach conda-forge, and whether its ca bundle is the problem
 init:
   - pwsh: |
       & $env:CONDA_PATH --version
-      try { "probe: HTTP $((Invoke-WebRequest -Uri 'https://repo.anaconda.com/pkgs/main/win-64/repodata.json' -Method Head -TimeoutSec 30).StatusCode)" }
-      catch { "probe failed: $($_.Exception.Message)" }
+
+      # 1. different host, possibly a tls config 4.8.2 can still negotiate
+      & $env:CONDA_PATH search -c conda-forge --override-channels conda 2>&1 | Select-Object -Last 2
+      "PROBE conda-forge reachable: $($LASTEXITCODE -eq 0)"
+
+      # 2. if this works it is a stale ca bundle, fixable without replacing conda
+      & $env:CONDA_PATH config --set ssl_verify false
+      & $env:CONDA_PATH search -c defaults --override-channels conda 2>&1 | Select-Object -Last 2
+      "PROBE defaults with ssl_verify=false: $($LASTEXITCODE -eq 0)"
+      & $env:CONDA_PATH config --set ssl_verify true
 
 # don't build if only readme changed
 skip_commits:
