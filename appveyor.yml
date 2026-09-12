@@ -176,8 +176,8 @@ for:
           $tesseract_build_32 = Join-Path -Path $PWD -ChildPath "build_32"
 
           # build Tesseract x64 and x86
-          cmake -G "Visual Studio 17 2022" -A x64 -S . -B "build_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_64" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DLeptonica_DIR="$leptonica_install_64\lib\cmake\leptonica"
-          cmake -G "Visual Studio 17 2022" -A Win32 -S . -B "build_32" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_32" -DBUILD_TRAINING_TOOLS=OFF -DSW_BUILD=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DLeptonica_DIR="$leptonica_install_32\lib\cmake\leptonica"
+          cmake -G "Visual Studio 17 2022" -A x64 -S . -B "build_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_64" -DBUILD_TRAINING_TOOLS=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DLeptonica_DIR="$leptonica_install_64\lib\cmake\leptonica"
+          cmake -G "Visual Studio 17 2022" -A Win32 -S . -B "build_32" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$tesseract_install_32" -DBUILD_TRAINING_TOOLS=OFF -DBUILD_SHARED_LIBS=ON -DOPENMP_BUILD=OFF -DLeptonica_DIR="$leptonica_install_32\lib\cmake\leptonica"
 
           cmake --build build_64 --config Release --target install
           cmake --build build_32 --config Release --target install
