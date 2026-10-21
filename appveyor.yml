@@ -12,7 +12,7 @@ image: Visual Studio 2022
 #                  affect us: tesserocr reads via pixRead, and test_leptonica_image_formats covers eurotext.tif (green in 2.11.0.1).
 
 environment:
-  PYTHON_VERSIONS: 39, 310, 311, 312, 313, 314
+  PYTHON_VERSIONS: 39, 310, 311, 312, 313, 314, 315
   LEGACY_CMAKE_VERSION: 3.29.6
   CONDA_PATH: C:\Miniconda3-x64\Scripts\conda.exe
   
@@ -238,16 +238,19 @@ for:
     build_script:
       - pwsh: |
 
-          # ------ Install Python 3.14 32-bit -----------------------------------
+          # ------ Install Python 3.15 ------------------------------------------
           
-          # Note 2025-10-26: installing Python 3.14 32-bit manually until either:
-          # - AppVeyor Visual Studio 2022 image includes Python 3.14 32-bit pre-installed, or
-          # - Python 3.14 32-bit becomes available on conda-forge/defaults channels
-          # Note 2025-11-08: added https://github.com/appveyor/ci/issues/3982#issuecomment-3503968989
-          # uncomment if ever becomes necessary again:
-          #if (-not (Test-Path "C:\Python314")) {
-          #    choco install python --version=3.14.0 -y --params "/InstallDir:C:\Python314" --x86
-          #}
+          # Note 2026-10-21: installing Python 3.15 from nuget.org until the AppVeyor Visual Studio 2022 image includes it.
+          #                  conda has no 32-bit builds, and unlike choco the x86 and x64 packages install side by side
+          foreach ($nuget_python in @(
+              @{ package = "python";    install_dir = "C:\Python315-x64" },
+              @{ package = "pythonx86"; install_dir = "C:\Python315" }
+          )) {
+              if (-not (Test-Path $nuget_python.install_dir)) {
+                  nuget install $nuget_python.package -Version 3.15.1 -ExcludeVersion -NonInteractive -OutputDirectory C:\nuget_python
+                  [IO.Directory]::Move("C:\nuget_python\$($nuget_python.package)\tools", $nuget_python.install_dir)
+              }
+          }
       
           # ------ Update Conda -------------------------------------------------
           
